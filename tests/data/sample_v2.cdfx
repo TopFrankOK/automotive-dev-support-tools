@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 测试用 CDFX 样本 —— 对比版 v2（配合 sample_v2.a2l 使用）
+
+     相对 v1 的变化：
+       Kp_Speed     850 → 920      数值变了（这是唯一一处真正的数值改动）
+       Ki_Speed     120 → 120      不变（但地址漂移，应只报地址变化）
+       Idle_Base    12  → 12       不变（但转换方法变了，应报属性变化而非数值变化）
+       Temp_Offset  已随 A2L 一起删除
+       Fuel_Cut_Threshold 新增     A2L v2 里新增的量
+-->
+<MSRSW>
+  <SHORT-NAME>DemoCal_V2</SHORT-NAME>
+  <CATEGORY>CDF20</CATEGORY>
+
+  <SW-SYSTEMS>
+    <SW-SYSTEM>
+      <SHORT-NAME>EngineModule</SHORT-NAME>
+      <SW-INSTANCE-SPEC>
+        <SW-INSTANCE-TREE>
+          <SHORT-NAME>DemoCal_V2</SHORT-NAME>
+
+          <SW-INSTANCE>
+            <SHORT-NAME>EngCal</SHORT-NAME>
+            <CATEGORY>STRUCTURE</CATEGORY>
+
+            <SW-INSTANCE>
+              <SHORT-NAME>Kp_Speed</SHORT-NAME>
+              <CATEGORY>VALUE</CATEGORY>
+              <SW-VALUE-CONT>
+                <SW-VALUES-PHYS>
+                  <V>920</V>
+                </SW-VALUES-PHYS>
+              </SW-VALUE-CONT>
+            </SW-INSTANCE>
+
+            <SW-INSTANCE>
+              <SHORT-NAME>Idle_Base</SHORT-NAME>
+              <CATEGORY>VALUE</CATEGORY>
+              <SW-VALUE-CONT>
+                <SW-VALUES-PHYS>
+                  <V>12</V>
+                </SW-VALUES-PHYS>
+              </SW-VALUE-CONT>
+            </SW-INSTANCE>
+
+          </SW-INSTANCE>
+
+          <SW-INSTANCE>
+            <SHORT-NAME>Ki_Speed</SHORT-NAME>
+            <CATEGORY>VALUE</CATEGORY>
+            <SW-VALUE-CONT>
+              <SW-VALUES-PHYS>
+                <V>120</V>
+              </SW-VALUES-PHYS>
+            </SW-VALUE-CONT>
+          </SW-INSTANCE>
+
+          <SW-INSTANCE>
+            <SHORT-NAME>Fuel_Cut_Threshold</SHORT-NAME>
+            <CATEGORY>VALUE</CATEGORY>
+            <SW-VALUE-CONT>
+              <SW-VALUES-PHYS>
+                <V>2400</V>
+              </SW-VALUES-PHYS>
+            </SW-VALUE-CONT>
+          </SW-INSTANCE>
+
+          <SW-INSTANCE>
+            <SHORT-NAME>CoolantTemp</SHORT-NAME>
+            <CATEGORY>COM_AXIS</CATEGORY>
+            <SW-VALUE-CONT>
+              <SW-VALUES-PHYS>
+                <V>-40</V><V>-20</V><V>0</V><V>20</V>
+                <V>40</V><V>60</V><V>90</V><V>120</V>
+              </SW-VALUES-PHYS>
+            </SW-VALUE-CONT>
+          </SW-INSTANCE>
+
+        </SW-INSTANCE-TREE>
+      </SW-INSTANCE-SPEC>
+    </SW-SYSTEM>
+  </SW-SYSTEMS>
+</MSRSW>

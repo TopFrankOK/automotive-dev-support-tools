@@ -224,8 +224,13 @@ class Characteristic(BaseModel):
     description: str = ""
     read_only: bool = False
 
-    raw_values: list[int] | None = None
-    """原始面当前值。为 None 表示「未加载值集」，只有描述信息。"""
+    raw_values: list[float] | None = None
+    """原始面当前值。为 None 表示「未加载值集」，只有描述信息。
+
+    浮点容器而非整数容器，是刻意的：值集（CDFX 等）给的是物理值，
+    反算出的原始值可能带小数。整数类型在绑定时已量化，
+    见 `values._to_raw`。
+    """
 
     array_size: int | None = None
     """VAL_BLK 的元素个数。"""

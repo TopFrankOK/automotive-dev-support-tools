@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 测试用 CDFX 样本 —— 基准版 v1（配合 sample_v1.a2l 使用）
+
+     刻意设置的几种情况：
+       EngCal.Kp_Speed      嵌套实例   → 验证路径拼接 + 末段回退匹配
+       Ki_Speed             扁平实例   → 验证精确匹配
+       Temp_Offset          LINEAR 转换 → 验证物理值反算原始值
+       CoolantTemp          COM_AXIS   → 验证轴点绑定
+       Obsolete_Gain        描述里没有 → 验证「值集有多余的量」必须被报告
+       Torque_Map           故意不给值 → 验证「描述有、值集没有」必须被报告
+-->
+<MSRSW>
+  <SHORT-NAME>DemoCal_V1</SHORT-NAME>
+  <CATEGORY>CDF20</CATEGORY>
+
+  <SW-SYSTEMS>
+    <SW-SYSTEM>
+      <SHORT-NAME>EngineModule</SHORT-NAME>
+      <SW-INSTANCE-SPEC>
+        <SW-INSTANCE-TREE>
+          <SHORT-NAME>DemoCal_V1</SHORT-NAME>
+
+          <!-- 容器：自身没有值，只有子实例 -->
+          <SW-INSTANCE>
+            <SHORT-NAME>EngCal</SHORT-NAME>
+            <CATEGORY>STRUCTURE</CATEGORY>
+
+            <SW-INSTANCE>
+              <SHORT-NAME>Kp_Speed</SHORT-NAME>
+              <CATEGORY>VALUE</CATEGORY>
+              <SW-VALUE-CONT>
+                <SW-VALUES-PHYS>
+                  <V>850</V>
+                </SW-VALUES-PHYS>
+              </SW-VALUE-CONT>
+            </SW-INSTANCE>
+
+            <SW-INSTANCE>
+              <SHORT-NAME>Idle_Base</SHORT-NAME>
+              <CATEGORY>VALUE</CATEGORY>
+              <SW-VALUE-CONT>
+                <SW-VALUES-PHYS>
+                  <V>12</V>
+                </SW-VALUES-PHYS>
+              </SW-VALUE-CONT>
+            </SW-INSTANCE>
+
+          </SW-INSTANCE>
+
+          <SW-INSTANCE>
+            <SHORT-NAME>Ki_Speed</SHORT-NAME>
+            <CATEGORY>VALUE</CATEGORY>
+            <SW-VALUE-CONT>
+              <SW-VALUES-PHYS>
+                <V>120</V>
+              </SW-VALUES-PHYS>
+            </SW-VALUE-CONT>
+          </SW-INSTANCE>
+
+          <SW-INSTANCE>
+            <SHORT-NAME>Temp_Offset</SHORT-NAME>
+            <CATEGORY>VALUE</CATEGORY>
+            <UNIT>degC</UNIT>
+            <SW-VALUE-CONT>
+              <SW-VALUES-PHYS>
+                <V>-5.0</V>
+              </SW-VALUES-PHYS>
+            </SW-VALUE-CONT>
+          </SW-INSTANCE>
+
+          <!-- 轴点：按输入量名 CoolantTemp 匹配到 Torque_Map 的第二根轴 -->
+          <SW-INSTANCE>
+            <SHORT-NAME>CoolantTemp</SHORT-NAME>
+            <CATEGORY>COM_AXIS</CATEGORY>
+            <SW-VALUE-CONT>
+              <SW-VALUES-PHYS>
+                <V>-40</V><V>-20</V><V>0</V><V>20</V>
+                <V>40</V><V>60</V><V>90</V><V>120</V>
+              </SW-VALUES-PHYS>
+            </SW-VALUE-CONT>
+          </SW-INSTANCE>
+
+          <!-- 描述文件里已经没有这个量了 -->
+          <SW-INSTANCE>
+            <SHORT-NAME>Obsolete_Gain</SHORT-NAME>
+            <CATEGORY>VALUE</CATEGORY>
+            <SW-VALUE-CONT>
+              <SW-VALUES-PHYS>
+                <V>999</V>
+              </SW-VALUES-PHYS>
+            </SW-VALUE-CONT>
+          </SW-INSTANCE>
+
+        </SW-INSTANCE-TREE>
+      </SW-INSTANCE-SPEC>
+    </SW-SYSTEM>
+  </SW-SYSTEMS>
+</MSRSW>

@@ -5,12 +5,13 @@
 
 ## 当前状态
 
-**P0（骨架 + 授权体系）已完成**，其余功能域尚未开始。
+**P0（骨架 + 授权体系）已完成，P1（值集加载）已完成**，其余功能域尚未开始。
 
 | 阶段 | 内容 | 状态 |
 | --- | --- | --- |
 | P0 | 分层骨架、插件注册表、离线授权体系 | ✅ 完成 |
-| P1 | CDM 双面模型、值集加载（DCM/CDFX）、HEX 写回 | ⬜ 未开始 |
+| P1a | 值集加载（CDFX）与值—描述绑定 | ✅ 完成 |
+| P1b | CDM 双面模型、HEX / DCM 解析与写回 | ⬜ 未开始 |
 | P2 | 持久化：工件索引、内容哈希缓存、作业调度 | ⬜ 未开始 |
 | P3 | 前端：工作台、差异表格、Map/Curve 视图 | ⬜ 未开始 |
 | P4 | 数据分析：MF4/BLF 索引、降采样、趋势视图 | ⬜ 未开始 |
@@ -44,6 +45,21 @@ apps  ──▶  services  ──▶  platform  ──▶  core  ◀──  plug
 - `apps/` 桌面壳（Tauri）与 CLI
 
 完整设计见 [`ARCHITECTURE.md`](ARCHITECTURE.md)。
+
+## 值集与描述是分开的
+
+A2L 只说「有哪些量、长什么样」，值集（CDFX / DCM）只说「当前值是多少」。
+两者分开演进，所以「把值贴到描述上」是一次**对齐**，不是赋值：
+
+```python
+a2l  = A2lParser().parse(FileSource("demo.a2l"), ctx).document      # 结构
+vals = CdfxParser().parse(FileSource("demo.cdfx"), ctx).document    # 值
+bound, binding = bind_values(a2l, vals)
+print(binding.coverage, binding.missing_in_model, binding.missing_in_values)
+```
+
+对不上的部分**一律报告，绝不静默丢弃** ——
+「贴完值了但某个量其实还是旧的」不会报错，只会让某次试验的结论悄悄错掉。
 
 ## 快速开始
 

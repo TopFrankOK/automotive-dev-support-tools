@@ -218,13 +218,14 @@ def _diff_values(
         pb = phys_before[index] if index < len(phys_before) else None
         pa = phys_after[index] if index < len(phys_after) else None
 
-        raw_changed = rb != ra
-        phys_changed = (
-            pb is None
-            or pa is None
-            or abs(pa - pb) > tolerance
-        )
-        if not (raw_changed or phys_changed):
+        # ★ 以物理值为准，原始值只作记录。
+        #
+        # 转换方法被改过时，原始值会整片变化，但工程师看到的值
+        # 可能一个都没动 —— 那不是数值改动，不该报出来。
+        # （转换方法本身的变化由 ATTRS_CHANGED 负责报告。）
+        # 反过来的情形必须报：物理值变了，无论原始值变没变。
+        phys_changed = pb is None or pa is None or abs(pa - pb) > tolerance
+        if not phys_changed:
             continue
 
         changes.append(

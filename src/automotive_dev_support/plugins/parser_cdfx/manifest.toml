@@ -1,0 +1,21 @@
+# 插件清单 —— 注册表只读这个文件，不读代码。
+
+[plugin]
+id = "parser-cdfx"
+name = "CDFX 标定值集解析器"
+version = "0.1.0"
+api_version = "1"
+
+capabilities = ["parser"]
+
+entry = "automotive_dev_support.plugins.parser_cdfx.parser:CdfxParser"
+
+description = """
+解析 ASAM CDF（CDFX）标定值集文件，产出 ValueSet。
+只解析「值」，不解析「结构」—— 结构由 A2L 描述文件提供，
+两者在绑定阶段汇合。支持树形嵌套实例的符号路径拼接。
+"""
+
+handles = ["cdfx"]
+
+requires = []

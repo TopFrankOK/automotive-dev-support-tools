@@ -64,6 +64,7 @@ name = 插件之间必须互相独立
 type = independence
 modules =
     automotive_dev_support.plugins.parser_a2l
+    automotive_dev_support.plugins.parser_cdfx
     automotive_dev_support.plugins.diff_calibration
 
 
