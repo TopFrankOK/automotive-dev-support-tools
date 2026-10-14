@@ -2,4 +2,18 @@
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from automotive_dev_support.services.compare import (
+    CalibrationSources,
+    CompareOutcome,
+    LoadedCalibration,
+    load_calibration,
+    run_compare,
+)
+
+__all__ = [
+    "CalibrationSources",
+    "CompareOutcome",
+    "LoadedCalibration",
+    "load_calibration",
+    "run_compare",
+]

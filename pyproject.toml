@@ -17,9 +17,16 @@ dev = [
     "pytest>=8",
     "import-linter>=2.0",
 ]
+# 导出 Excel 报告用。刻意不进核心依赖 —— 不导出报告的机器不用装。
+excel = [
+    "openpyxl>=3.1",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/automotive_dev_support"]
+
+[project.scripts]
+ads = "automotive_dev_support.apps.cli.main:main"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

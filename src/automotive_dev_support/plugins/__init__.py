@@ -21,14 +21,16 @@
 
     parser_a2l         A2L 描述文件 → CalibrationModel        [parser]
     parser_cdfx        CDFX 值集文件 → ValueSet               [parser]
+    parser_hex         Intel HEX 镜像 → AddressSpace          [parser]
+    parser_s19         Motorola S-Record 镜像 → AddressSpace  [parser]
     diff_calibration   两个 CalibrationModel → ChangeSet       [analyzer]
+    export_excel_diff  ChangeSet → Excel 报告                  [exporter]
 
 ## 计划中
 
-    parser_hex / parser_elf / parser_dcm         内存镜像与值集
-    align_symbol                                  跨版本符号对齐
-    view_diff_table / view_map_curve              比对结果的界面
-    export_excel_diff                             比对报告导出
+    parser_elf / parser_dcm         内存镜像与值集
+    align_symbol                    跨版本符号对齐
+    view_diff_table / view_map_curve 比对结果的界面
     parser_mf4 / signal_compute / view_trend      数据分析
     gateway_can / gateway_doip / flash_recipe_*   刷写
     bridge_matlab                                 MATLAB 桥

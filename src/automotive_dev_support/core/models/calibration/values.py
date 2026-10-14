@@ -28,6 +28,7 @@ A2L 只说「有哪些量、长什么样」，值集（DCM / CDFX / 参数集）
 
 from __future__ import annotations
 
+import struct
 from enum import StrEnum
 from typing import Any
 
@@ -39,6 +40,7 @@ from automotive_dev_support.core.models.calibration.model import (
     DataType,
 )
 from automotive_dev_support.core.models.common import SymbolPath
+from automotive_dev_support.core.models.memory import AddressSpace
 
 __all__ = [
     "ValueCategory",
@@ -46,7 +48,25 @@ __all__ = [
     "ValueSet",
     "ValueBinding",
     "bind_values",
+    "bind_image",
 ]
+
+#: 不量化的数据类型。其余（各种整数）在物理值反算原始值时取整。
+_FLOAT_TYPES = frozenset({DataType.FLOAT32, DataType.FLOAT64})
+
+#: 数据类型 → struct 格式字符。ASCII 不走 struct（按字节序列处理）。
+_STRUCT_FMT: dict[DataType, str] = {
+    DataType.UINT8: "B",
+    DataType.SINT8: "b",
+    DataType.UINT16: "H",
+    DataType.SINT16: "h",
+    DataType.UINT32: "I",
+    DataType.SINT32: "i",
+    DataType.UINT64: "Q",
+    DataType.SINT64: "q",
+    DataType.FLOAT32: "f",
+    DataType.FLOAT64: "d",
+}
 
 #: 不量化的数据类型。其余（各种整数）在物理值反算原始值时取整。
 _FLOAT_TYPES = frozenset({DataType.FLOAT32, DataType.FLOAT64})
@@ -295,4 +315,122 @@ def _finalize_warnings(binding: ValueBinding) -> None:
         binding.warnings.append(
             f"{len(binding.matched_by_fallback)} 个量是靠末段同名回退匹配上的，"
             "请确认命名层级差异是有意为之"
+        )
+
+
+# ---------------------------------------------------------------------------
+# 从内存镜像取值的另一条路
+# ---------------------------------------------------------------------------
+
+
+def bind_image(
+    model: CalibrationModel,
+    image: AddressSpace,
+    byte_order: str = "big",
+) -> tuple[CalibrationModel, ValueBinding]:
+    """按描述文件的地址与类型，从内存镜像读出标定量的原始值。
+
+    与 `bind_values` 是**两条并列的加载路径**，产出同一个东西
+    （挂上值的模型）与同一份对账报告：
+
+        bind_values   值集（CDFX/DCM）→ 按符号路径对齐 → 写值
+        bind_image    内存镜像（HEX/S19）→ 按地址读取    → 写值
+
+    ## 为什么读之前必须先问 covers
+
+    `AddressSpace.read()` 对空洞填 0xFF（Flash 擦除态）。
+    不检查覆盖就直接读，镜像里没有的地址会读出 0xFF 冒充真实值 ——
+    而且不报任何错。所以这里逐个量检查区间覆盖，没覆盖到的
+    一律进 `missing_in_values` 并告警，**绝不猜**。
+
+    ## 字节序
+
+    汽车 ECU 绝大多数是大端（Motorola/Freescale/NXP 皆然），
+    默认 `big`。遇到小端平台（部分英飞凌/ARM 配置）由调用方显式传 `little`。
+    """
+    bound = model.model_copy(deep=True)
+    binding = ValueBinding()
+    prefix = ">" if byte_order == "big" else "<"
+
+    for path, char in sorted(bound.characteristics.items()):
+        values = _read_characteristic(char, image, prefix)
+        if values is None:
+            binding.missing_in_values.append(path)
+            continue
+        char.raw_values = values
+        binding.matched.append(path)
+
+    _bind_axes_from_image(bound, image, prefix, binding)
+    _finalize_image_warnings(binding)
+    return bound, binding
+
+
+def _read_characteristic(
+    char: Characteristic, image: AddressSpace, prefix: str
+) -> list[float] | None:
+    """读出一个标定量的原始值；读不到返回 None（由调用方记录缺失）。"""
+    if char.address is None:
+        return None
+    count = char.element_count
+    if count <= 0:
+        return None
+    width = char.data_type.byte_size
+    size = count * width
+    if not image.covers(char.address, size):
+        return None
+
+    blob = image.read(char.address, size)
+    if char.data_type is DataType.ASCII:
+        # ASCII 量按字节序列存取，物理值即字节值（IDENTITY 转换）。
+        return [float(b) for b in blob]
+    fmt = _STRUCT_FMT.get(char.data_type)
+    if fmt is None:
+        return None
+    return [float(v) for v in struct.unpack(f"{prefix}{count}{fmt}", blob)]
+
+
+def _bind_axes_from_image(
+    model: CalibrationModel,
+    image: AddressSpace,
+    prefix: str,
+    binding: ValueBinding,
+) -> None:
+    """轴点取值。只有带地址的轴（STD_AXIS / COM_AXIS）在镜像里有字节。"""
+    missing_axes: list[str] = []
+    for key, axis in sorted(model.axes.items()):
+        if axis.address is None or axis.count <= 0:
+            continue
+        width = axis.data_type.byte_size
+        size = axis.count * width
+        if not image.covers(axis.address, size):
+            missing_axes.append(key)
+            continue
+        blob = image.read(axis.address, size)
+        fmt = _STRUCT_FMT.get(axis.data_type)
+        if fmt is None:
+            missing_axes.append(key)
+            continue
+        raws = struct.unpack(f"{prefix}{axis.count}{fmt}", blob)
+        points = [axis.compu.to_physical(float(v)) for v in raws]
+        axis.fixed_points = points
+        for char in model.characteristics.values():
+            for sub in char.axes:
+                if sub.path.text == axis.path.text:
+                    sub.fixed_points = list(points)
+
+    if missing_axes:
+        binding.warnings.append(
+            f"{len(missing_axes)} 个轴的地址区间不在镜像内，轴点未加载："
+            + "、".join(missing_axes[:5])
+            + ("…" if len(missing_axes) > 5 else "")
+        )
+
+
+def _finalize_image_warnings(binding: ValueBinding) -> None:
+    if binding.missing_in_values:
+        preview = "、".join(sorted(binding.missing_in_values)[:5])
+        more = "…" if len(binding.missing_in_values) > 5 else ""
+        binding.warnings.append(
+            f"{len(binding.missing_in_values)} 个量没有从镜像取到值"
+            f"（无地址、元素个数未知或地址区间不在镜像内）：{preview}{more}"
         )

@@ -1,0 +1,21 @@
+# 插件清单 —— 注册表只读这个文件，不读代码。
+
+[plugin]
+id = "parser-s19"
+name = "Motorola S-Record 内存镜像解析器"
+version = "0.1.0"
+api_version = "1"
+
+capabilities = ["parser"]
+
+entry = "automotive_dev_support.plugins.parser_s19.parser:S19Parser"
+
+description = """
+解析 Motorola S-Record（.s19/.srec/.mot）内存镜像，产出 AddressSpace。
+支持 S0-S9 全部记录类型（S1/S2/S3 三种地址宽度）；
+逐行校验 checksum，校验失败的记录不加载。
+"""
+
+handles = ["s19"]
+
+requires = []

@@ -205,6 +205,26 @@ class AddressSpace(BaseModel):
             return None
         return self.read(sym.address, sym.size)
 
+    def covers(self, address: int, size: int) -> bool:
+        """`[address, address+size)` 是否被完整覆盖。
+
+        **读之前必须先问它。** `read()` 对空洞用 0xFF 填充
+        （Flash 擦除态）—— 不检查覆盖就直接读，洞里的 0xFF
+        会被当成真实数据用，而且看不出任何异常。
+        """
+        if size <= 0:
+            return False
+        end = address + size
+        for seg in self._sorted():
+            if seg.end <= address:
+                continue
+            if seg.start > address:
+                return False
+            if seg.end >= end:
+                return True
+            address = seg.end
+        return False
+
     # -- 写 ----------------------------------------------------------------
 
     def write(self, address: int, data: bytes) -> None:

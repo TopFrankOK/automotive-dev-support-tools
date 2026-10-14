@@ -65,7 +65,10 @@ type = independence
 modules =
     automotive_dev_support.plugins.parser_a2l
     automotive_dev_support.plugins.parser_cdfx
+    automotive_dev_support.plugins.parser_hex
+    automotive_dev_support.plugins.parser_s19
     automotive_dev_support.plugins.diff_calibration
+    automotive_dev_support.plugins.export_excel_diff
 
 
 ; ---------------------------------------------------------------------------

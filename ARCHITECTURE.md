@@ -337,15 +337,23 @@ automotive-dev-support-tools/
    │  ├─ skeleton/          统一骨架：Artifact / DataSource / EventBus / Job
    │  ├─ ports/             冻结的扩展点契约 + 插件注册表
    │  ├─ models/            分领域模型，各自独立演进
+   │  │  ├─ calibration/    标定：模型 + 值集绑定 + 比对结果
+   │  │  ├─ memory/         内存镜像：AddressSpace + 装配器
+   │  │  ├─ flash/          刷写（待建）
+   │  │  └─ signal/         信号时序（待建）
    │  └─ licensing/         授权纯逻辑：编解码 / 签发 / 五道关卡
    ├─ platform/             基础设施：有副作用的东西
    │  ├─ store/             文件数据源（+ 待建：索引、缓存）
    │  └─ licensing/         机器指纹 / 状态持久化 / 授权服务
-   ├─ services/             用例编排（待建）
-   ├─ apps/                 CLI（待建）
+   ├─ services/             用例编排（compare：加载 → 绑定 → 比对 → 导出）
+   ├─ apps/cli/             `ads` 命令行（Typer，薄封装 services）
    └─ plugins/              ★ 一功能一文件夹
       ├─ parser_a2l/         A2L → CalibrationModel
-      └─ diff_calibration/   两个版本 → ChangeSet
+      ├─ parser_cdfx/        CDFX → ValueSet
+      ├─ parser_hex/         Intel HEX → AddressSpace
+      ├─ parser_s19/         Motorola S-Record → AddressSpace
+      ├─ diff_calibration/   两个版本 → ChangeSet
+      └─ export_excel_diff/  ChangeSet → Excel 报告
 ```
 
 心法一句话：**`core/` 与 `contracts/` 慎改；`plugins/` 随便改。**
@@ -358,12 +366,12 @@ automotive-dev-support-tools/
 | 阶段 | 内容 | 验收标准 |
 |---|---|---|
 | **P0** ✅ | 骨架 + 纪律 + 授权模块 | `pytest` 全绿；能签出第一张许可码 |
-| **P1** | CDM 双面模型 + A2L/HEX 解析 + 比对 + Excel 导出 | 拿真实工程文件跑通一次版本对比 |
-| **P2** | 持久化：工件索引、内容哈希缓存、作业调度 | 重复解析同一文件秒出 |
-| **P3** | 前端：工作台 + 差异表格 + Map/Curve 视图 | 可以给同事用了 |
-| **P4** | 数据分析：MF4/BLF 索引、降采样、趋势视图 | |
-| **P5** | 刷写：CAN/DoIP 网关 + 配方 + 审计日志 | |
-| **P6** | MATLAB 桥 + 独立 MATLAB 工程 | |
+| **P1** ✅ | CDM 端到端：A2L / CDFX / HEX / S19 解析、值加载与绑定、比对、Excel 导出、CLI | 145 个测试全绿；CLI 拿样例文件跑通版本对比并产出报告 |
+| **P2** | 数据分析：MF4 / BLF / ASC 索引、降采样、趋势视图 | |
+| **P3** | 软件刷写：CAN / DoIP 网关 + 配方状态机 + 断点续刷 + 审计日志 | |
+| **P4** | MATLAB 桥 + Tauri 桌面壳 + FastAPI 服务层 | 可以给同事用了 |
+
+每个完成的阶段在 git 上打 tag（`p0`、`p1`、……），阶段之间可回滚、可对照。
 
 **不要同时开工多块。** 每块都是独立的大工程，
 而 P1 的双面模型最难也最关键 —— 先把它验证对，后面都会受益。

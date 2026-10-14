@@ -24,6 +24,7 @@ from automotive_dev_support.core.models.calibration.values import (
     ValueCategory,
     ValueEntry,
     ValueSet,
+    bind_image,
     bind_values,
 )
 
@@ -44,6 +45,7 @@ __all__ = [
     "ValueSet",
     "ValueBinding",
     "bind_values",
+    "bind_image",
     # 比对结果
     "ChangeSet",
     "ChangeKind",

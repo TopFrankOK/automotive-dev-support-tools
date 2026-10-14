@@ -1,0 +1,23 @@
+# 插件清单 —— 注册表只读这个文件，不读代码。
+
+[plugin]
+id = "export-excel-diff"
+name = "标定比对报告导出（Excel）"
+version = "0.1.0"
+api_version = "1"
+
+capabilities = ["exporter"]
+
+entry = "automotive_dev_support.plugins.export_excel_diff.exporter:ExcelDiffExporter"
+
+description = """
+把标定比对结果（ChangeSet）导出成 Excel 报告：
+汇总 / 改动明细 / 地址漂移三张表。
+
+依赖 openpyxl —— 它不在核心依赖里，是刻意为之：
+核心零重型依赖，导出能力是可选插件，用到的机器才装。
+"""
+
+handles = []
+
+requires = []

@@ -1,0 +1,22 @@
+# 插件清单 —— 注册表只读这个文件，不读代码。
+
+[plugin]
+id = "parser-hex"
+name = "Intel HEX 内存镜像解析器"
+version = "0.1.0"
+api_version = "1"
+
+capabilities = ["parser"]
+
+entry = "automotive_dev_support.plugins.parser_hex.parser:HexParser"
+
+description = """
+解析 Intel HEX（.hex/.ihx）内存镜像，产出 AddressSpace。
+支持 00/01/02/03/04/05 全部记录类型；扩展线性地址（04）与
+扩展段地址（02）按规范累积生效；逐行校验 checksum，
+校验失败的记录不加载（坏字节进标定值就是数据事故）。
+"""
+
+handles = ["hex"]
+
+requires = []

@@ -5,18 +5,27 @@
 
 ## 当前状态
 
-**P0（骨架 + 授权体系）已完成，P1（值集加载）已完成**，其余功能域尚未开始。
+**P0（骨架 + 授权体系）与 P1（标定 CDM 端到端）均已完成**，其余功能域尚未开始。
+每个阶段在 git 上都有对应 tag：`p0` 骨架与授权，`p1` 标定端到端。
 
 | 阶段 | 内容 | 状态 |
 | --- | --- | --- |
 | P0 | 分层骨架、插件注册表、离线授权体系 | ✅ 完成 |
-| P1a | 值集加载（CDFX）与值—描述绑定 | ✅ 完成 |
-| P1b | CDM 双面模型、HEX / DCM 解析与写回 | ⬜ 未开始 |
-| P2 | 持久化：工件索引、内容哈希缓存、作业调度 | ⬜ 未开始 |
-| P3 | 前端：工作台、差异表格、Map/Curve 视图 | ⬜ 未开始 |
-| P4 | 数据分析：MF4/BLF 索引、降采样、趋势视图 | ⬜ 未开始 |
-| P5 | 软件刷写：CAN/DoIP 网关、配方、审计日志 | ⬜ 未开始 |
-| P6 | MATLAB 桥 + 独立 MATLAB 工程 | ⬜ 未开始 |
+| P1 | 标定 CDM 端到端：A2L / CDFX / HEX / S19 解析、值加载与绑定、比对、Excel 报告、CLI | ✅ 完成 |
+| P2 | 数据分析：MF4 / BLF / ASC 索引、降采样、趋势视图 | ⬜ 未开始 |
+| P3 | 软件刷写：CAN / DoIP 网关、配方状态机、断点续刷、审计日志 | ⬜ 未开始 |
+| P4 | MATLAB 桥 + Tauri 桌面壳 + FastAPI 服务层 | ⬜ 未开始 |
+
+### 已内置插件
+
+| 插件 | 能力 | 说明 |
+| --- | --- | --- |
+| `parser-a2l` | parser | A2L 描述文件 → `CalibrationModel`（符号路径索引） |
+| `parser-cdfx` | parser | CDFX 值集 → `ValueSet`（树形实例路径拼接） |
+| `parser-hex` | parser | Intel HEX → `AddressSpace`（逐行 checksum，坏记录不加载） |
+| `parser-s19` | parser | Motorola S-Record → `AddressSpace` |
+| `diff-calibration` | analyzer | 两个标定模型 → `ChangeSet`（地址漂移单独归类） |
+| `export-excel-diff` | exporter | `ChangeSet` → Excel 报告（汇总 / 明细 / 地址漂移） |
 
 ## 四个功能域
 
@@ -64,14 +73,31 @@ print(binding.coverage, binding.missing_in_model, binding.missing_in_values)
 ## 快速开始
 
 ```bash
-# 安装开发依赖
-pip install -e ".[dev]"
+# 安装开发依赖（导出 Excel 报告需加 excel  extra）
+pip install -e ".[dev,excel]"
 
 # 跑测试
 pytest tests/ -q
 
 # 跑依赖方向契约（必须先设 PYTHONPATH）
 PYTHONPATH=src lint-imports
+```
+
+### 命令行：标定比对
+
+```bash
+# 值集版（CDFX）
+ads compare --baseline-a2l old.a2l --baseline-values old.cdfx \
+            --candidate-a2l new.a2l --candidate-values new.cdfx \
+            --out report.xlsx
+
+# 内存镜像版（HEX / S19）—— 值按 A2L 描述的地址与类型从镜像读出
+ads compare --baseline-a2l old.a2l --baseline-image old.hex \
+            --candidate-a2l new.a2l --candidate-image new.s19 \
+            --out report.xlsx
+
+# 看看有哪些插件可用
+ads plugins
 ```
 
 ## 授权
