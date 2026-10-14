@@ -1,0 +1,80 @@
+; ============================================================================
+;  Automotive Software Development Support Tools 依赖方向契约
+;
+;  这是「交叉影响小」的执行者 —— 不靠自觉，违规即构建失败。
+;
+;  运行方式（需先把 src 放进 PYTHONPATH）：
+;      PYTHONPATH=src lint-imports
+;
+;  设计意图：
+;      apps ──▶ services ──▶ platform ──▶ core ◀── plugins
+;      core 不依赖任何人；plugins 只依赖 core，且互不依赖。
+; ============================================================================
+
+[importlinter]
+root_package = automotive_dev_support
+
+
+; ---------------------------------------------------------------------------
+; 契约 1：领域核心必须纯净
+;
+; core 是全系统的地基。它一旦依赖外层，所有外层改动都会穿透到地基，
+; 迭代独立性即刻失效。允许的第三方依赖只有 pydantic（纯数据层），
+; 该约束由 tests/test_layering.py 用 AST 扫描进一步兜住。
+; ---------------------------------------------------------------------------
+[importlinter:contract:1]
+name = core 不得依赖任何外层（领域核心必须纯净）
+type = forbidden
+source_modules =
+    automotive_dev_support.core
+forbidden_modules =
+    automotive_dev_support.apps
+    automotive_dev_support.services
+    automotive_dev_support.platform
+    automotive_dev_support.plugins
+
+
+; ---------------------------------------------------------------------------
+; 契约 2：插件只能依赖 core
+;
+; 插件是可抛弃、可独立开发的部分。它若依赖 platform 或 services，
+; 就会和基础设施/业务编排绑死，失去「一个文件夹即一个功能」的性质。
+; ---------------------------------------------------------------------------
+[importlinter:contract:2]
+name = 插件只能依赖 core，不得依赖应用层与基础设施层
+type = forbidden
+source_modules =
+    automotive_dev_support.plugins
+forbidden_modules =
+    automotive_dev_support.apps
+    automotive_dev_support.services
+    automotive_dev_support.platform
+
+
+; ---------------------------------------------------------------------------
+; 契约 3：插件之间必须互相独立
+;
+; 这条砍掉了绝大多数「改 A 崩 B」。两个插件要共享逻辑，
+; 就应该把那份逻辑上提到 core，而不是互相 import。
+; 每新增一个插件，都要在此处登记 —— 这是刻意的摩擦，
+; 为的是强迫你思考「这真的是一个独立插件吗」。
+; ---------------------------------------------------------------------------
+[importlinter:contract:3]
+name = 插件之间必须互相独立
+type = independence
+modules =
+    automotive_dev_support.plugins.parser_a2l
+    automotive_dev_support.plugins.diff_calibration
+
+
+; ---------------------------------------------------------------------------
+; 契约 4：分层只能向下
+; ---------------------------------------------------------------------------
+[importlinter:contract:4]
+name = 分层只能向下：apps -> services -> platform -> core
+type = layers
+layers =
+    automotive_dev_support.apps
+    automotive_dev_support.services
+    automotive_dev_support.platform
+    automotive_dev_support.core

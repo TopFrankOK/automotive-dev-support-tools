@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "automotive-dev-support-tools"
+version = "0.1.0"
+description = "Automotive Software Development Support Tools —— 汽车嵌入式研发办公助手（标定数据管理 / 数据分析 / 软件刷写 / 模型工程助手）"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.7",
+    "cryptography>=42",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "import-linter>=2.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/automotive_dev_support"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"

@@ -1,0 +1,159 @@
+/* 测试用 A2L 样本 —— 基准版 v1
+   刻意做得小但结构完整：PROJECT / MODULE / COMPU_METHOD /
+   CHARACTERISTIC / AXIS_DESCR / MATRIX_DIM / GROUP 都有覆盖。
+*/
+
+ASAP2_VERSION 1 61
+
+/begin PROJECT DemoProject "标定演示项目"
+  /begin HEADER "本文件仅用于自动化测试，不是真实工程数据"
+    PROJECT_NO DEMO001
+  /end HEADER
+
+  /begin MODULE EngineModule "发动机控制模块"
+
+    /begin COMPU_METHOD
+      CM_None
+      "单位转换：直通"
+      IDENTITY
+      "%6.3"
+      ""
+    /end COMPU_METHOD
+
+    /begin COMPU_METHOD
+      CM_TempLinear
+      "线性转换：0.1 增益、-40 偏移"
+      LINEAR
+      "%8.3"
+      "degC"
+      /begin COEFFS_LINEAR
+        0.1 -40.0
+      /end COEFFS_LINEAR
+    /end COMPU_METHOD
+
+    /begin COMPU_METHOD
+      CM_Pct
+      "百分比显示"
+      IDENTITY
+      "%6.2"
+      "%"
+    /end COMPU_METHOD
+
+    /begin MEASUREMENT
+      EngineSpeed
+      "发动机转速（只读测量量）"
+      UWORD
+      CM_None
+      0
+      0
+      0
+      0
+      ECU_ADDRESS 0x40001000
+    /end MEASUREMENT
+
+    /begin CHARACTERISTIC
+      Kp_Speed
+      "转速环比例增益"
+      VALUE
+      0x80001234
+      UWORD
+      0
+      CM_None
+      0
+      65535
+    /end CHARACTERISTIC
+
+    /begin CHARACTERISTIC
+      Ki_Speed
+      "转速环积分增益"
+      VALUE
+      0x80001236
+      UWORD
+      0
+      CM_None
+      0
+      65535
+    /end CHARACTERISTIC
+
+    /begin CHARACTERISTIC
+      Temp_Offset
+      "温度传感器偏移"
+      VALUE
+      0x80001238
+      SWORD
+      0
+      CM_TempLinear
+      -40
+      200
+      /begin EXTENDED_LIMITS
+        -50 250
+      /end EXTENDED_LIMITS
+      /begin FORMAT
+        "%7.2"
+      /end FORMAT
+    /end CHARACTERISTIC
+
+    /begin CHARACTERISTIC
+      Idle_Base
+      "怠速基础量"
+      VALUE
+      0x8000123A
+      UWORD
+      0
+      CM_Pct
+      0
+      100
+    /end CHARACTERISTIC
+
+    /begin CHARACTERISTIC
+      Torque_Map
+      "扭矩特性图（转速 x 冷却液温度）"
+      MAP
+      0x80002000
+      UWORD
+      0
+      CM_None
+      0
+      5000
+      /begin AXIS_DESCR
+        STD_AXIS
+        EngineSpeed
+        CM_None
+        16
+        0
+        6000
+      /end AXIS_DESCR
+      /begin AXIS_DESCR
+        STD_AXIS
+        CoolantTemp
+        CM_None
+        8
+        -40
+        120
+      /end AXIS_DESCR
+      /begin MATRIX_DIM
+        16 8 1
+      /end MATRIX_DIM
+    /end CHARACTERISTIC
+
+    /begin GROUP
+      TorqueGroup
+      "扭矩相关标定量"
+      ROOT
+      /begin REF_CHARACTERISTIC
+        Torque_Map
+        Kp_Speed
+      /end REF_CHARACTERISTIC
+    /end GROUP
+
+    /begin GROUP
+      IdleGroup
+      "怠速相关标定量"
+      ROOT
+      /begin REF_CHARACTERISTIC
+        Idle_Base
+      /end REF_CHARACTERISTIC
+    /end GROUP
+
+  /end MODULE
+/end PROJECT

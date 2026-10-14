@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutomotiveDevSupport · P0 构建验收报告</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --panel:#ffffff; --ink:#17181c; --ink2:#5b6070; --ink3:#8a90a0;
+    --line:#e3e6ec; --line2:#eef0f4;
+    --ok:#0f8a5f; --okbg:#e8f6f0;
+    --warn:#b8730a; --warnbg:#fdf3e2;
+    --todo:#6b7280; --todobg:#f1f2f5;
+    --accent:#2f5fd0; --accentbg:#ecf1fd;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#141518; --panel:#1c1e22; --ink:#eceef2; --ink2:#a8adbb; --ink3:#7b8191;
+      --line:#2b2e35; --line2:#24272d;
+      --ok:#4ecb95; --okbg:#15291f;
+      --warn:#e0a952; --warnbg:#2c2415;
+      --todo:#9aa0b0; --todobg:#23262c;
+      --accent:#7ea6f5; --accentbg:#1a2233;
+    }
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:15px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:940px;margin:0 auto;padding:44px 24px 72px}
+  header{border-bottom:2px solid var(--line);padding-bottom:24px;margin-bottom:32px}
+  .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);font-weight:600}
+  h1{font-size:27px;margin:10px 0 8px;letter-spacing:-.01em}
+  .sub{color:var(--ink2);font-size:14px;margin:0}
+  h2{font-size:17px;margin:38px 0 14px;padding-left:11px;border-left:3px solid var(--accent)}
+  h3{font-size:14px;margin:22px 0 8px;color:var(--ink2)}
+  p{margin:10px 0}
+  code{font-family:var(--mono);font-size:.88em;background:var(--line2);padding:1.5px 5px;border-radius:4px}
+  pre{
+    font-family:var(--mono);font-size:12.5px;line-height:1.65;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:15px 17px;overflow-x:auto;margin:12px 0;
+  }
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:12px;margin:16px 0 6px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:15px 16px}
+  .card .k{font-size:11.5px;color:var(--ink3);letter-spacing:.05em}
+  .card .v{font-size:23px;font-weight:650;margin-top:5px;letter-spacing:-.02em}
+  .card .v small{font-size:12.5px;font-weight:400;color:var(--ink2);margin-left:4px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin:12px 0}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line2);vertical-align:top}
+  th{font-size:11.5px;letter-spacing:.06em;color:var(--ink3);text-transform:uppercase;font-weight:600;border-bottom:1px solid var(--line)}
+  tbody tr:last-child td{border-bottom:none}
+  .tbl{background:var(--panel);border:1px solid var(--line);border-radius:11px;overflow:hidden}
+  .pill{display:inline-block;font-size:11.5px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap}
+  .p-ok{background:var(--okbg);color:var(--ok)}
+  .p-todo{background:var(--todobg);color:var(--todo)}
+  .p-accent{background:var(--accentbg);color:var(--accent)}
+  ul{margin:10px 0;padding-left:20px}
+  li{margin:7px 0}
+  li::marker{color:var(--ink3)}
+  .note{
+    background:var(--warnbg);border:1px solid var(--line);border-left:3px solid var(--warn);
+    border-radius:8px;padding:13px 16px;margin:16px 0;font-size:13.5px;color:var(--ink)
+  }
+  .ok-note{background:var(--okbg);border-left-color:var(--ok)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media (max-width:700px){.grid2{grid-template-columns:1fr}}
+  .fil{font-family:var(--mono);font-size:12.5px;color:var(--ink2)}
+  .d-ok{color:var(--ok);font-weight:600}
+  .d-todo{color:var(--ink3)}
+  footer{margin-top:46px;padding-top:18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">AutomotiveDevSupport · 构建验收</div>
+  <h1>P0 骨架 + 授权模块：已落地并通过验收</h1>
+  <p class="sub">
+    统一骨架 · 冻结扩展点 · 分领域模型 · 离线 Ed25519 授权 · 两个真实插件。
+    依赖方向由工具守住，不靠自觉。
+  </p>
+</header>
+
+<div class="cards">
+  <div class="card"><div class="k">测试用例</div><div class="v">81<small>全绿</small></div></div>
+  <div class="card"><div class="k">依赖契约</div><div class="v">4 / 4<small>KEPT</small></div></div>
+  <div class="card"><div class="k">Python 源码</div><div class="v">4.9k<small>行 / 42 文件</small></div></div>
+  <div class="card"><div class="k">许可码长度</div><div class="v">366<small>字符</small></div></div>
+</div>
+
+<h2>验收命令与结果</h2>
+<pre>pytest tests/ -q                        →  81 passed
+PYTHONPATH=src lint-imports             →  4 contracts kept, 0 broken
+
+  core 不得依赖任何外层           KEPT
+  插件只能依赖 core              KEPT
+  插件之间必须互相独立            KEPT
+  分层只能向下                    KEPT</pre>
+
+<h2>分层落地地图</h2>
+<p>
+  P0 的目标不是画完所有领域模型，而是先把<strong>承重结构</strong>立起来：
+  依赖方向、扩展点契约、执行模型。这些东西一旦定型，后面加功能才是
+  「加一个文件夹」，而不是「动一次地基」。
+</p>
+
+<div class="tbl">
+<table>
+  <thead><tr><th style="width:15%">层</th><th style="width:30%">目录</th><th style="width:12%">状态</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>领域核心</td>
+      <td class="fil">core/skeleton/<br>core/ports/</td>
+      <td><span class="pill p-ok">已落地</span></td>
+      <td>四根柱子（Artifact / DataSource / Job / Event）+ 七类扩展点契约，<code>API_VERSION="1"</code></td>
+    </tr>
+    <tr>
+      <td>领域模型</td>
+      <td class="fil">core/models/<br>├ common<br>├ calibration<br>└ memory</td>
+      <td><span class="pill p-ok">标定+内存</span> <span class="pill p-todo">信号/刷写</span></td>
+      <td><code>SymbolPath</code> 为稳定标识；<code>AddressSpace</code> 是 CDM 与刷写共用模型</td>
+    </tr>
+    <tr>
+      <td>授权</td>
+      <td class="fil">core/licensing/<br>platform/licensing/</td>
+      <td><span class="pill p-ok">已落地</span></td>
+      <td>纯逻辑五道关卡 + 系统侧机器指纹/防篡改存储/单调时钟</td>
+    </tr>
+    <tr>
+      <td>基础设施</td>
+      <td class="fil">platform/store/</td>
+      <td><span class="pill p-ok">文件源</span> <span class="pill p-todo">缓存/作业</span></td>
+      <td><code>FileSource</code> 原子写回、内容哈希</td>
+    </tr>
+    <tr>
+      <td>插件</td>
+      <td class="fil">plugins/parser_a2l/<br>plugins/diff_calibration/</td>
+      <td><span class="pill p-ok">两个可用</span></td>
+      <td>A2L 手写扫描器 + 按符号路径对齐的比对器</td>
+    </tr>
+    <tr>
+      <td>应用层</td>
+      <td class="fil">services/</td>
+      <td><span class="pill p-todo">待建</span></td>
+      <td>用例编排 + FastAPI + 授权闸门依赖</td>
+    </tr>
+    <tr>
+      <td>交互层</td>
+      <td class="fil">apps/desktop (Tauri)</td>
+      <td><span class="pill p-todo">待建</span></td>
+      <td>前端只经 <code>127.0.0.1</code> HTTP/WS 通信，不走 Tauri IPC 传业务数据</td>
+    </tr>
+    <tr>
+      <td>签发工具</td>
+      <td class="fil">tools/license-issuer/</td>
+      <td><span class="pill p-ok">已落地</span></td>
+      <td><code>init / new / renew / list / show</code>，不随软件分发</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h2>端到端冒烟（真实插件链路，非 mock）</h2>
+<p>
+  走的是「选两个 A2L → 解析 → 比对 → 出报告」这条链路，
+  也就是首期落地场景<strong>标定参数比对</strong>。
+</p>
+<pre>=== 标定比对报告 ===
+  [新增] Fuel_Cut_Threshold  @0x8000124C  组=IdleGroup
+  [删除] Temp_Offset         @0x80001238
+  [变动] Idle_Base    attrs_changed
+            compu: 'CM_Pct' → 'CM_None'
+            unit:  '%'      → ''
+  [变动] Ki_Speed     attrs_changed
+            upper: 65535 → 32767
+            地址:  0x80001236 → 0x80001246
+  [变动] Kp_Speed     address_moved          ← 纯地址漂移，单独归类
+            地址:  0x80001234 → 0x80001244
+
+=== 汇总 ===
+  added: 1   removed: 1   changed: 3
+  address_moved: 1        meaningful: 4</pre>
+
+<div class="note ok-note">
+  <strong>关键点：地址漂移被隔离成了独立类别。</strong>
+  App 重编一次，成百上千个标定量的地址会整体漂移。如果把它算成「改动」，
+  报告里 90% 的条目都是噪音，这个功能就白做了 —— 所以
+  <code>address_moved</code> 默认折叠，不进 <code>meaningful</code> 口径。
+</div>
+
+<h2>授权链路冒烟</h2>
+<pre>issuer init                      →  private_key.hex + public_key.txt（公钥落盘）
+issuer new --code 9F3A-… --name 张三 --message
+                                 →  366 字符许可码（&lt;800，一条微信可发）+ 自动进剪贴板
+issuer renew --code 9F3A-…       →  上次到期 2026-11-13 14:13，接续后 2026-12-13
+                                    （提前 29 天续期不损失剩余天数）
+issuer list                      →  台账一致，剩余 59 天</pre>
+<p>
+  许可码形如 <code>WF1.&lt;压缩载荷&gt;.&lt;签名&gt;</code>：签名 64 字节，载荷完全公开 ——
+  安全性来自签名，不来自保密。改任何一个字节，签名就对不上。
+</p>
+
+<h2>本轮排掉的坑</h2>
+<p>有几处非常隐蔽，记下来避免重犯。</p>
+
+<div class="grid2">
+  <div>
+    <h3>1 · 压缩库的参数陷阱</h3>
+    <p>
+      <code>zlib.decompress(data, n)</code> 的第二个位置参数是 <code>wbits</code>（8–15），
+      <strong>不是长度上限</strong>。传 <code>256*1024</code> 直接抛
+      <code>zlib.error</code>，一次性挂掉 36 个测试。
+      要限解压后大小只能用 <code>decompressobj</code>，并检查
+      <code>unconsumed_tail</code> —— 否则压缩炸弹会被悄悄截断成半截 JSON。
+    </p>
+  </div>
+  <div>
+    <h3>2 · 签发端与校验端时钟必须对称</h3>
+    <p>
+      校验端支持 <code>now=</code> 注入，签发端却只读墙钟，
+      于是「有效期 30 天」这类断言会随跑测试的时刻漂移。
+      给 <code>issue()</code> 补上 <code>now</code> 之后整条链路才可复现。
+      连带推论：时钟容差类用例的许可码<strong>必须早于参考时刻签发</strong>。
+    </p>
+  </div>
+  <div>
+    <h3>3 · 前缀匹配不能按整段严格比</h3>
+    <p>
+      A2L 里符号大量是扁平命名的（<code>Torque_Map</code>）。
+      用户输入 <code>Torque</code> 期待的是「所有 Torque 开头的符号」，
+      按整段严格相等会直接返回空集。改为段边界匹配 + 末段允许部分前缀。
+    </p>
+  </div>
+  <div>
+    <h3>4 · 属性差异要如实报「单位」</h3>
+    <p>
+      <code>CM_Pct</code> → <code>CM_None</code> 会连带把显示单位从
+      <code>%</code> 变成空。把 unit 并进 compu 字段，
+      「哪些量的单位变了」这条信息就从报告里消失了。
+    </p>
+  </div>
+  <div>
+    <h3>5 · 台账的精度与字段迁移</h3>
+    <p>
+      时间戳只存到「日」会让续期把到期时刻拉回零点，与原始许可差十几小时；
+      改为存到秒。新增字段时必须先迁移表头 ——
+      <code>csv.DictWriter</code> 按 <code>fieldnames</code> 顺序落值，
+      旧表头少一列会让整行错位，账目从此对不上号。
+    </p>
+  </div>
+  <div>
+    <h3>6 · 插件间共享类型必须上提</h3>
+    <p>
+      <code>ChangeSet</code> 若留在比对插件里，导出插件就必须 import 它，
+      两个插件被绑死。<strong>不是靠自律，而是靠把共享类型放到正确的位置</strong> ——
+      这也是「插件之间禁止互相 import」这条纪律真正的落地方式。
+    </p>
+  </div>
+</div>
+
+<h2>下一步</h2>
+<ul>
+  <li><span class="pill p-accent">建议</span> 先 <code>git init</code>：<code>.gitignore</code> 已备好（<code>keys/</code> 已覆盖）。P0 是基线，值得先固化。</li>
+  <li><strong>P1 · CDM 双面模型</strong>：<code>memory</code> 模型补段表与校验和规格，接 HEX / ELF 解析，把「语义面 + 原始面」的双面写回跑通。</li>
+  <li><strong>P1 · 值集加载</strong>：DCM / CDFX 解析，让 <code>raw_values</code> 真正有值（现在比对只能比属性，比不了数值）。</li>
+  <li><strong>P2 · 持久化</strong>：工件索引、内容哈希缓存、作业调度。</li>
+  <li><strong>P3 · 前端</strong>：工作台 + 差异表格 + Map / Curve 视图。届时比对插件与视图插件依然互不认识。</li>
+</ul>
+
+<footer>
+  AutomotiveDevSupport · 汽车嵌入式研发办公助手 &nbsp;|&nbsp; P0 构建验收报告 &nbsp;|&nbsp; 2026-10-14
+</footer>
+
+</div>
+</body>
+</html>

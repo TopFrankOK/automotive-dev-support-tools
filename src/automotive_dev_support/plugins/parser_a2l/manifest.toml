@@ -1,0 +1,28 @@
+# 插件清单 —— 注册表只读这个文件，不读代码。
+# 因此「有哪些功能可用」是零风险查询，即使某个插件的依赖没装好。
+
+[plugin]
+id = "parser-a2l"
+name = "A2L 标定描述解析器"
+version = "0.1.0"
+api_version = "1"
+
+# 声明能力。注册表据此把它编入 parser 索引。
+capabilities = ["parser"]
+
+# 入口格式：package.module:Attribute
+entry = "automotive_dev_support.plugins.parser_a2l.parser:A2lParser"
+
+description = """
+解析 ASAM MCD-2MC（A2L）描述文件，产出标定领域的 CalibrationModel。
+提取 CHARACTERISTIC / AXIS_DESCR / COMPU_METHOD / GROUP，
+并以符号路径为键建立索引（跨版本对齐的关键）。
+"""
+
+# 处理的文件格式
+handles = ["a2l"]
+
+# 本插件不需要额外授权功能项。
+# 若将来做成收费模块，改成 requires = ["calibration-diff"] 即可，
+# 授权闸门会自动拦住未授权的用户 —— 代码一行都不用改。
+requires = []

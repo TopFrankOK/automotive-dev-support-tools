@@ -1,0 +1,49 @@
+# ============================================================================
+#  换行与二进制策略
+#
+#  为什么要显式写这份文件，而不是依赖 core.autocrlf？
+#
+#  core.autocrlf 是**每台机器各自设置**的。你本机是 true（Git for Windows 默认），
+#  同事的机器可能是 false，WSL 里默认又是另一种。一旦不同，同一份文件在
+#  不同人那里会被判定为「整份都改了」—— 真正的改动淹没在满屏的 ^M 里。
+#
+#  这里的作用是把换行策略**钉进仓库**，与谁在哪台机器上克隆无关。
+# ============================================================================
+
+# 让 git 按内容自动判定文本/二进制；文本一律以 LF 存进仓库
+* text=auto
+
+# 明确指定为文本的文件（保险起见，避免被误判成二进制而失去 diff）
+*.py    text
+*.toml  text
+*.md    text
+*.html  text
+*.a2l   text
+*.hex   text
+*.s19   text
+*.cfg   text
+*.ini   text
+*.txt   text
+.gitignore    text
+.gitattributes text
+.importlinter  text
+
+# 二进制文件：禁止任何换行转换，否则文件会被写坏
+#
+# 注意 *.hex 不在此列：在汽车嵌入式里它指 Intel HEX，是纯文本，
+# 而且「比较两个 HEX 的差异」正是 CDM 的核心功能，标成二进制会让 diff 失效。
+*.png   binary
+*.jpg   binary
+*.ico   binary
+*.icns  binary
+*.exe   binary
+*.dll   binary
+*.so    binary
+*.pyc   binary
+*.db    binary
+*.sqlite binary
+*.bin   binary
+
+# 锁文件与生成物在 diff 里没有阅读价值，折叠掉
+package-lock.json  -diff
+*.idx              -diff

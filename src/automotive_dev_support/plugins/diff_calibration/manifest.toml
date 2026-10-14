@@ -1,0 +1,19 @@
+[plugin]
+id = "diff-calibration"
+name = "标定数据比对"
+version = "0.1.0"
+api_version = "1"
+capabilities = ["analyzer"]
+entry = "automotive_dev_support.plugins.diff_calibration.analyzer:CalibrationDiffer"
+
+description = """
+按符号路径对齐两个版本的标定模型，产出 ChangeSet。
+
+对齐靠符号路径而非地址 —— App 重编一次地址会整体漂移，
+按地址比对会产出满屏假差异。地址变化被单独归类为
+address_moved，默认折叠，不淹没真正的改动。
+"""
+
+# 与 parser-a2l 之间没有任何 import 关系：
+# 它只在运行时通过注册表被调用，产出的 ChangeSet 定义在 core 里。
+requires = []
