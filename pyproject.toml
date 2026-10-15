@@ -10,6 +10,9 @@ requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.7",
     "cryptography>=42",
+    # CLI 是随软件分发的入口（[project.scripts] ads），不是可选功能，
+    # 所以 typer 进核心依赖；Excel 导出那种「部分机器才用」的才放 extra。
+    "typer>=0.12",
 ]
 
 [project.optional-dependencies]

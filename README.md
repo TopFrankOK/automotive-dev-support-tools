@@ -5,14 +5,15 @@
 
 ## 当前状态
 
-**P0（骨架 + 授权体系）与 P1（标定 CDM 端到端）均已完成**，其余功能域尚未开始。
-每个阶段在 git 上都有对应 tag：`p0` 骨架与授权，`p1` 标定端到端。
+**P0（骨架 + 授权体系）、P1（标定 CDM 端到端）、P2（测量数据分析）均已完成**，
+其余功能域尚未开始。
+每个阶段在 git 上都有对应 tag：`p0` 骨架与授权，`p1` 标定端到端，`p2` 测量数据分析。
 
 | 阶段 | 内容 | 状态 |
 | --- | --- | --- |
 | P0 | 分层骨架、插件注册表、离线授权体系 | ✅ 完成 |
 | P1 | 标定 CDM 端到端：A2L / CDFX / HEX / S19 解析、值加载与绑定、比对、Excel 报告、CLI | ✅ 完成 |
-| P2 | 数据分析：MF4 / BLF / ASC 索引、降采样、趋势视图 | ⬜ 未开始 |
+| P2 | 数据分析：MF4 / BLF / ASC 索引、对齐与降采样、趋势命令 | ✅ 完成 |
 | P3 | 软件刷写：CAN / DoIP 网关、配方状态机、断点续刷、审计日志 | ⬜ 未开始 |
 | P4 | MATLAB 桥 + Tauri 桌面壳 + FastAPI 服务层 | ⬜ 未开始 |
 
@@ -24,6 +25,9 @@
 | `parser-cdfx` | parser | CDFX 值集 → `ValueSet`（树形实例路径拼接） |
 | `parser-hex` | parser | Intel HEX → `AddressSpace`（逐行 checksum，坏记录不加载） |
 | `parser-s19` | parser | Motorola S-Record → `AddressSpace` |
+| `parser-asc` | parser | Vector ASC 日志 → 事件流（统计全量、帧体有界） |
+| `parser-blf` | parser | Vector BLF 二进制日志 → 事件流（对象头逐类校验） |
+| `parser-mf4` | parser | MDF4 块链索引 → 连续通道组（懒加载）+ 总线事件组 |
 | `diff-calibration` | analyzer | 两个标定模型 → `ChangeSet`（地址漂移单独归类） |
 | `export-excel-diff` | exporter | `ChangeSet` → Excel 报告（汇总 / 明细 / 地址漂移） |
 
@@ -99,6 +103,24 @@ ads compare --baseline-a2l old.a2l --baseline-image old.hex \
 # 看看有哪些插件可用
 ads plugins
 ```
+
+### 命令行：测量数据
+
+```bash
+# 一个测量文件里有什么（连续通道组 + 总线报文 ID）
+ads signals run.mf4
+
+# 抽稀后的趋势（min/max 频带，尖峰不因抽样丢失）
+ads trend run.mf4 --signal EngineSpeed --points 40
+ads trend run.mf4 --signal EngineSpeed --from 0.2 --to 0.5
+ads trend bus.asc --signal ch1/0x850          # 事件流：报文速率
+
+# 两次测量的同一条信号对齐到公共栅格，报告差异
+ads align old.mf4 new.mf4 --signal EngineSpeed --step 0.01
+```
+
+**MF4 是懒加载的**：`ads signals` 只建索引不读数据，GB 级文件也是毫秒级；
+取值发生在 `trend` / `align` 真正需要那一条信号时。
 
 ## 授权
 

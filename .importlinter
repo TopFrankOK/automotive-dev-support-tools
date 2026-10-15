@@ -69,6 +69,9 @@ modules =
     automotive_dev_support.plugins.parser_s19
     automotive_dev_support.plugins.diff_calibration
     automotive_dev_support.plugins.export_excel_diff
+    automotive_dev_support.plugins.parser_asc
+    automotive_dev_support.plugins.parser_blf
+    automotive_dev_support.plugins.parser_mf4
 
 
 ; ---------------------------------------------------------------------------

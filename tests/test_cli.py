@@ -135,6 +135,9 @@ class TestPluginsCommand:
             "parser-cdfx",
             "parser-hex",
             "parser-s19",
+            "parser-asc",
+            "parser-blf",
+            "parser-mf4",
             "diff-calibration",
             "export-excel-diff",
         ):
@@ -144,3 +147,131 @@ class TestPluginsCommand:
         result = runner.invoke(app, ["--help"])
         assert result.exit_code == 0
         assert "compare" in result.output
+        assert "trend" in result.output
+
+
+class TestMeasurementCommands:
+    def test_signals_lists_groups_and_event_ids(self):
+        result = runner.invoke(app, ["signals", str(SAMPLE_DATA / "sample_v1.mf4")])
+        assert result.exit_code == 0, result.output
+        assert "EngineSpeed" in result.output
+        assert "CoolantTemp" in result.output
+        # 未排序总线组在 MF4 里是通道组（time/CAN_ID/DLC/DataBytes）
+        assert "CAN_ID" in result.output
+        assert "组 2" in result.output
+
+    def test_signals_on_asc_lists_frame_ids(self):
+        result = runner.invoke(app, ["signals", str(SAMPLE_DATA / "sample_v1.asc")])
+        assert result.exit_code == 0, result.output
+        assert "ch1/0x850" in result.output
+        assert "事件流" in result.output
+
+    def test_trend_continuous_signal(self):
+        result = runner.invoke(
+            app,
+            [
+                "trend",
+                str(SAMPLE_DATA / "sample_v1.mf4"),
+                "--signal", "EngineSpeed",
+                "--points", "10",
+                "--show", "3",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert "EngineSpeed" in result.output
+        assert "[rpm]" in result.output
+        assert "100 → 10 带" in result.output
+        assert "样本）" in result.output
+
+    def test_trend_with_window(self):
+        result = runner.invoke(
+            app,
+            [
+                "trend",
+                str(SAMPLE_DATA / "sample_v1.mf4"),
+                "--signal", "CoolantTemp",
+                "--from", "0.2",
+                "--to", "0.5",
+                "--points", "100",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert "0.200 – 0.500" in result.output
+
+    def test_trend_event_stream_rate(self):
+        result = runner.invoke(
+            app,
+            [
+                "trend",
+                str(SAMPLE_DATA / "sample_v1.asc"),
+                "--signal", "ch1/0x850",
+                "--points", "5",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert "frames/s" in result.output
+        assert "3 帧" in result.output
+
+    def test_trend_unknown_signal_exits_2(self):
+        result = runner.invoke(
+            app,
+            ["trend", str(SAMPLE_DATA / "sample_v1.mf4"), "--signal", "NoSuchSignal"],
+        )
+        assert result.exit_code == 2
+        assert "找不到信号" in result.output
+
+    def test_trend_missing_file_exits_2(self):
+        result = runner.invoke(
+            app, ["trend", str(SAMPLE_DATA / "nope.mf4"), "--signal", "EngineSpeed"]
+        )
+        assert result.exit_code == 2
+        assert "不存在" in result.output
+
+    def test_align_reports_difference(self):
+        result = runner.invoke(
+            app,
+            [
+                "align",
+                str(SAMPLE_DATA / "sample_v1.mf4"),
+                str(SAMPLE_DATA / "sample_v2.mf4"),
+                "--signal", "EngineSpeed",
+                "--step", "0.01",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert "EngineSpeed" in result.output
+        assert "最大" in result.output
+        # v2 整体 +50、第 50 样本另有 +200 尖峰
+        assert "250.0" in result.output
+
+    def test_align_disjoint_windows_exits_2(self):
+        """窗口远离数据区 → 无交集 → 退出码 2，不出假结论。"""
+        result = runner.invoke(
+            app,
+            [
+                "align",
+                str(SAMPLE_DATA / "sample_v1.mf4"),
+                str(SAMPLE_DATA / "sample_v2.mf4"),
+                "--signal", "EngineSpeed",
+                "--from", "5.0",
+                "--to", "6.0",
+            ],
+        )
+        assert result.exit_code == 2
+        assert "没有交集" in result.output
+
+    def test_align_with_window(self):
+        result = runner.invoke(
+            app,
+            [
+                "align",
+                str(SAMPLE_DATA / "sample_v1.mf4"),
+                str(SAMPLE_DATA / "sample_v2.mf4"),
+                "--signal", "EngineSpeed",
+                "--step", "0.1",
+                "--from", "0.0",
+                "--to", "0.5",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert "0.000–0.500" in result.output

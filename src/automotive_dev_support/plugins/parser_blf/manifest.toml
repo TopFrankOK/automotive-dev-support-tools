@@ -1,0 +1,11 @@
+# 插件清单 —— 注册表只读这个文件，不读代码。
+
+[plugin]
+id = "parser-blf"
+name = "Vector BLF 日志解析器"
+version = "0.1.0"
+capabilities = ["parser"]
+api_version = "1"
+entry = "automotive_dev_support.plugins.parser_blf.parser:BlfParser"
+description = "Vector 二进制日志（.blf）→ 测量事件流（CAN/CAN FD/错误帧）"
+handles = ["blf"]

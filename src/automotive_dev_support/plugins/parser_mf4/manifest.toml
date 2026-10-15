@@ -1,0 +1,11 @@
+# 插件清单 —— 注册表只读这个文件，不读代码。
+
+[plugin]
+id = "parser-mf4"
+name = "MDF4 测量文件解析器"
+version = "0.1.0"
+capabilities = ["parser"]
+api_version = "1"
+entry = "automotive_dev_support.plugins.parser_mf4.parser:Mdf4Parser"
+description = "MDF4（.mf4）块结构索引 → 测量模型（连续通道组懒加载 + 总线事件组）"
+handles = ["mf4"]

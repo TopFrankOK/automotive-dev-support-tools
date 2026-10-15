@@ -23,6 +23,9 @@
     parser_cdfx        CDFX 值集文件 → ValueSet               [parser]
     parser_hex         Intel HEX 镜像 → AddressSpace          [parser]
     parser_s19         Motorola S-Record 镜像 → AddressSpace  [parser]
+    parser_asc         Vector ASC 日志 → 测量事件流           [parser]
+    parser_blf         Vector BLF 二进制日志 → 事件流         [parser]
+    parser_mf4         MDF4 块链索引 → 连续组（懒加载）       [parser]
     diff_calibration   两个 CalibrationModel → ChangeSet       [analyzer]
     export_excel_diff  ChangeSet → Excel 报告                  [exporter]
 
@@ -31,7 +34,7 @@
     parser_elf / parser_dcm         内存镜像与值集
     align_symbol                    跨版本符号对齐
     view_diff_table / view_map_curve 比对结果的界面
-    parser_mf4 / signal_compute / view_trend      数据分析
+    signal_compute / view_trend      测量数据分析与视图
     gateway_can / gateway_doip / flash_recipe_*   刷写
     bridge_matlab                                 MATLAB 桥
     admin_license                                 授权管理（用自己写的工具管自己）

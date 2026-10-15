@@ -9,6 +9,21 @@ from automotive_dev_support.services.compare import (
     load_calibration,
     run_compare,
 )
+from automotive_dev_support.services.analyze import (
+    AlignedSignal,
+    LoadedMeasurement,
+    TrendResult,
+    align_signal,
+    extract_trend,
+    format_event_key,
+    load_measurement,
+)
+from automotive_dev_support.services.measurement import (
+    ensure_time_axis,
+    load_group,
+    load_series,
+    read_records,
+)
 
 __all__ = [
     "CalibrationSources",
@@ -16,4 +31,15 @@ __all__ = [
     "LoadedCalibration",
     "load_calibration",
     "run_compare",
+    "AlignedSignal",
+    "LoadedMeasurement",
+    "TrendResult",
+    "align_signal",
+    "extract_trend",
+    "format_event_key",
+    "load_measurement",
+    "ensure_time_axis",
+    "load_group",
+    "load_series",
+    "read_records",
 ]
