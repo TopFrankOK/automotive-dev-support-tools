@@ -1,0 +1,24 @@
+# 插件清单 —— 注册表只读这个文件，不读代码。
+
+[plugin]
+id = "gateway-sim"
+name = "仿真网关（无硬件）"
+version = "0.1.0"
+api_version = "1"
+
+capabilities = ["gateway"]
+
+entry = "automotive_dev_support.plugins.gateway_sim.gateway:make_sim_gateway"
+
+description = """
+不碰硬件的字节通道，按脚本返回响应。
+用于在无 CAN 卡、无 ECU 的机器上驱动与验证整套刷写流程：
+超时、否定响应、中途断连都可以被精确复现。
+
+脚本项：bytes 正常返回；TIMEOUT 抛 TimeoutError；DROP 断开链路。
+脚本耗尽刻意抛错，绝不静默返回空字节。
+"""
+
+handles = []
+
+requires = []

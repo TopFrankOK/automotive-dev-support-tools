@@ -14,6 +14,7 @@ from automotive_dev_support.core.ports.plugin import (
     ParseOutcome,
     Parser,
     PluginManifest,
+    Recipe,
     View,
 )
 from automotive_dev_support.core.ports.registry import LoadedPlugin, PluginRegistry
@@ -29,6 +30,7 @@ __all__ = [
     "Exporter",
     "View",
     "Gateway",
+    "Recipe",
     "PluginRegistry",
     "LoadedPlugin",
 ]

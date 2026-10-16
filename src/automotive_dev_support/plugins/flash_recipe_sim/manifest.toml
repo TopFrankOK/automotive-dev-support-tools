@@ -1,0 +1,24 @@
+# 插件清单 —— 注册表只读这个文件，不读代码。
+
+[plugin]
+id = "flash-recipe-sim"
+name = "示例刷写配方（仿真）"
+version = "0.1.0"
+api_version = "1"
+
+capabilities = ["recipe"]
+
+entry = "automotive_dev_support.plugins.flash_recipe_sim.recipe:SimRecipe"
+
+description = """
+示例刷写时序：进入编程会话 → 安全访问 → 擦除 → 按段传输 → 校验 → 复位。
+把语义步骤翻译成请求字节，并把失败响应翻译成人能读的原因。
+
+协议专有知识全部留在本插件内，不进领域核心：
+将来支持另一种 Bootloader 时，只是再加一个配方插件。
+擦除与传输标记为不可取消 —— 中途停手会把目标留在半擦除状态。
+"""
+
+handles = []
+
+requires = []

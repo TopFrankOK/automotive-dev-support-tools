@@ -19,13 +19,19 @@
 
 | 域 | 执行模式 | 硬要求 | 状态 |
 |---|---|---|---|
-| 标定数据 CDM | 离线 · 可重算 · 可回放 | 必须无损往返写回 | ✅ P1 完成（写回未做） |
+| 标定数据 CDM | 离线 · 可重算 · 可回放 | 必须无损往返写回 | ✅ P1 完成（**写回未做**） |
 | 数据分析 | 大文件 · 流式 · 只读 | 分块索引 + 降采样 | ✅ P2 完成 |
 | 模型工程助手 | 进程外 · 跨语言 · 启动慢 | 契约解耦，只负责启动 | ⬜ P4 |
-| 软件刷写 | 在线 · 有状态 · 不可重放 | 断点续刷 + 审计日志 | ⬜ P3 |
+| 软件刷写 | 在线 · 有状态 · 不可重放 | 断点续刷 + 审计日志 | ✅ P3 完成（**真实总线待接**） |
 
-**已跑通的部分**：250 个测试全绿、9 个插件全部可用、依赖契约 4 kept / 0 broken、
-CLI 5 个命令可冒烟。**桌面 GUI 还没做**（Tauri 在 P4），目前唯一入口是 CLI `ads`。
+**已跑通的部分**：全部测试通过、11 个插件全部可用、依赖契约 4 kept / 0 broken、
+CLI `compare` / `signals` / `trend` / `align` / `flash` / `plugins` 可冒烟。
+**桌面 GUI 还没做**（Tauri 在 P4），目前唯一入口是 CLI `ads`。
+
+> **P3 交付的是刷写逻辑，不是总线驱动。**
+> 配方、断点续刷、审计、取消保护全部在**仿真网关**上跑通（无硬件依赖）。
+> 真实 CAN / DoIP 与独立进程网关不在本期：网关接口只传字节，
+> 届时加 `gateway-can` / `gateway-doip` 插件即可，编排层与领域模型一行都不用改。
 
 ---
 
@@ -53,7 +59,7 @@ $env:PYTHONPATH = "$PWD\src;C:\Users\赵林\.workbuddy\binaries\python\envs\defa
 & "C:\Users\赵林\.workbuddy\binaries\python\versions\3.13.12\python.exe" -m pytest tests --tb=short -p no:cacheprovider
 ```
 
-预期：`250 passed in ~10s`。
+预期：`352 passed in ~3.5s`（P3 之前是 250）。
 
 **三个必须记住的命令行细节：**
 
@@ -77,11 +83,18 @@ $env:PYTHONPATH = "$PWD\src;C:\Users\赵林\.workbuddy\binaries\python\envs\defa
 
 ```powershell
 & "...\python.exe" -m automotive_dev_support.apps.cli.main plugins
-# 预期：共发现 9 个插件，可用 9 个
+# 预期：共发现 11 个插件，可用 11 个
 ```
 
-`ads` 入口命令：`compare` / `signals` / `trend` / `align` / `plugins`。
+`ads` 入口命令：`compare` / `signals` / `trend` / `align` / `flash` / `plugins`。
 CLI 刻意保持薄，逻辑全在 `services/`，桌面壳（Tauri）将来走同一条路。
+
+刷写命令冒烟（走仿真网关，不需要硬件）：
+
+```powershell
+& "...\python.exe" -m automotive_dev_support.apps.cli.main flash run tests/data/sample_v1.hex --target ECM-01
+& "...\python.exe" -m automotive_dev_support.apps.cli.main flash history
+```
 
 ### 1.5 安装依赖
 
@@ -187,7 +200,7 @@ Ed25519 签名**文本许可码**（≈300 字符，微信用一段消息收发�
 
 ---
 
-## 5. 下一步任务（可直接开工，二选一）
+## 5. 下一步任务（可直接开工，三选一）
 
 ### 选项 A：CDM 写回（建议先做）
 
@@ -199,15 +212,19 @@ Ed25519 签名**文本许可码**（≈300 字符，微信用一段消息收发�
 - 顺带补 DCM 解析器（**需要用户提供真实 `.dcm` 样本**，Vector 专有格式细节不公开，
   不要凭猜测写）
 
-### 选项 B：P3 软件刷写
+### 选项 B：真实总线网关（CAN / DoIP）
 
-与前两个域的本质区别：**在线、有状态、不可重放**。
-不能复用 CDM 那套「可重算」思路。工作内容：
-- 硬件网关**独立进程**（跨语言接口：msgpack/protobuf 走本地管道，
-  因为实时性将来可能要用 C++/Rust 重写）
-- UDS/DoIP 配方状态机
-- 断点续刷
-- 全程审计日志
+P3 把刷写逻辑做完了，但**没有真实总线**。工作内容：
+- 新增 `gateway-can` / `gateway-doip` 插件实现已有的 `Gateway` 协议
+  （接口只传 `bytes`，不需要改动编排层与领域模型）
+- 真机上联调需要台架与设备，无法在开发环境验证
+- 需要真实 `.dcm` 或 ECU 的 Bootloader 手册才能写出对应配方
+
+### 选项 C：P4 MATLAB 桥 + Tauri 桌面壳 + FastAPI
+
+- MATLAB 集成用**文件契约**松耦合（`matlab -batch` 传参、写结果文件），不用 Engine API
+- 桌面壳只走 `127.0.0.1` 的 HTTP/WS，不走 Tauri IPC 传业务数据
+- 可以复用同一套许可码（`features` 加一项即可，公钥共用）
 
 ---
 
@@ -291,7 +308,7 @@ Ed25519 签名**文本许可码**（≈300 字符，微信用一段消息收发�
 - 仓库：`https://github.com/TopFrankOK/automotive-dev-support-tools`（**public**，MIT）
 - 分支 `main`，tag：`p0` / `p1` / `p2`（每阶段一个，用户要求）
 - 历史：`f758fa4`(P0 骨架+授权) → `dc39da5`(CDFX 值集) → `b7c037b`(P1 CDM 端到端)
-  → `23e2975`(P2 测量数据分析)
+  → `23e2975`(P2 测量数据分析) → P3 软件刷写（配方 + 仿真网关 + 断点续刷 + 审计）
 - **⚠️ 该项目有并发会话在活动**，动手前先 `git log` 看一眼，避免冲突
 - 提交身份（仅 `--local`）：`TopFrankOK <TopFrankOK@users.noreply.github.com>`
 - **`.gitattributes` 已钉住换行策略，且 `*.hex` 刻意判为文本**——
@@ -318,5 +335,5 @@ Ed25519 签名**文本许可码**（≈300 字符，微信用一段消息收发�
 
 ## 附：一句话状态
 
-> P0 骨架+授权、P1 标定 CDM 端到端、P2 测量数据分析已完成（250 测试全绿，9 插件可用）；
-> 待办：**CDM 写回**（用户明确要求的硬功能）、**P3 软件刷写**、P4 MATLAB 桥 + Tauri 壳 + FastAPI。
+> P0 骨架+授权、P1 标定 CDM 端到端、P2 测量数据分析、P3 软件刷写已完成（11 插件可用）；
+> 待办：**CDM 写回**（用户明确要求的硬功能，最该先做）、**真实总线网关**、P4 MATLAB 桥 + Tauri 壳 + FastAPI。

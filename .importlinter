@@ -72,6 +72,8 @@ modules =
     automotive_dev_support.plugins.parser_asc
     automotive_dev_support.plugins.parser_blf
     automotive_dev_support.plugins.parser_mf4
+    automotive_dev_support.plugins.gateway_sim
+    automotive_dev_support.plugins.flash_recipe_sim
 
 
 ; ---------------------------------------------------------------------------

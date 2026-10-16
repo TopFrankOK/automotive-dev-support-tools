@@ -28,6 +28,8 @@
     parser_mf4         MDF4 块链索引 → 连续组（懒加载）       [parser]
     diff_calibration   两个 CalibrationModel → ChangeSet       [analyzer]
     export_excel_diff  ChangeSet → Excel 报告                  [exporter]
+    gateway_sim        仿真网关：脚本化字节通道（无硬件）      [gateway]
+    flash_recipe_sim   示例刷写配方：语义步骤 → 请求字节       [recipe]
 
 ## 计划中
 
@@ -35,7 +37,8 @@
     align_symbol                    跨版本符号对齐
     view_diff_table / view_map_curve 比对结果的界面
     signal_compute / view_trend      测量数据分析与视图
-    gateway_can / gateway_doip / flash_recipe_*   刷写
+    gateway_can / gateway_doip       真实总线网关（接口已就绪，加插件即可）
+    flash_recipe_<ecu>               各 ECU 的真实配方
     bridge_matlab                                 MATLAB 桥
     admin_license                                 授权管理（用自己写的工具管自己）
 """

@@ -1,6 +1,6 @@
-"""刷写流程领域 —— 软件刷写（待实现）。
+"""刷写流程领域 —— 软件刷写。
 
-第三期建设。同样先固定设计约束。
+第三期建设。设计约束先行，随后落地模型。
 
 ## 已确定的设计约束
 
@@ -25,19 +25,44 @@
    刷写本质上就是「把地址空间镜像按段写进 ECU」——
    和 CDM 用的是同一个模型，不需要重复造。
 
-## 计划中的实体
+## 已落地的实体
 
-    FlashTarget      目标：ECU 标识、诊断 ID、当前版本、内存布局
+    FlashTarget      目标：ECU 标识、诊断 ID、内存布局
     FlashStepKind    步骤类型：进编程会话、安全访问、擦除、传输、校验、复位
     FlashStep        一步：类型、参数、超时、重试策略、是否可取消
     FlashRecipe      配方：有序步骤集合 + 前置条件
     FlashProgress    进度：当前步、已完成段、已传输字节
+    FlashCheckpoint  续刷检查点：完成游标 + 三项指纹
     FlashRecord      审计记录：时间、操作者、目标、文件哈希、结果
 
-`plugins/gateway-can` / `gateway-doip` 实现 `Gateway` 协议，
-`plugins/flash-recipe-*` 提供配方，二者组合成一次刷写作业。
+`plugins/gateway-*` 实现 `Gateway` 协议，`plugins/flash-recipe-*` 提供配方，
+二者在**字节边界**上碰面 —— 那也是本域唯一的测试缝。
 """
 
-from __future__ import annotations
+from automotive_dev_support.core.models.flash.model import (
+    FlashCheckpoint,
+    FlashProgress,
+    FlashRecipe,
+    FlashRecord,
+    FlashRegion,
+    FlashStep,
+    FlashStepKind,
+    FlashStepOutcome,
+    FlashTarget,
+    canonical_bytes,
+    fingerprint_of,
+)
 
-__all__: list[str] = []
+__all__ = [
+    "FlashCheckpoint",
+    "FlashProgress",
+    "FlashRecipe",
+    "FlashRecord",
+    "FlashRegion",
+    "FlashStep",
+    "FlashStepKind",
+    "FlashStepOutcome",
+    "FlashTarget",
+    "canonical_bytes",
+    "fingerprint_of",
+]
