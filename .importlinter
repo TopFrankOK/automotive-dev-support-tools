@@ -74,6 +74,7 @@ modules =
     automotive_dev_support.plugins.parser_mf4
     automotive_dev_support.plugins.gateway_sim
     automotive_dev_support.plugins.flash_recipe_sim
+    automotive_dev_support.plugins.writer_hex
 
 
 ; ---------------------------------------------------------------------------

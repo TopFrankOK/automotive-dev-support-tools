@@ -20,6 +20,7 @@ from pathlib import Path
 from automotive_dev_support.core.skeleton.artifact import ArtifactKind, ArtifactRef
 from automotive_dev_support.core.skeleton.capability import SourceCapability
 from automotive_dev_support.core.skeleton.datasource import DataSource, SourceError
+from automotive_dev_support.platform.atomic import replace_atomically
 
 __all__ = ["FileSource", "kind_from_suffix"]
 
@@ -126,7 +127,7 @@ class FileSource(DataSource):
         tmp = self._path.with_name(self._path.name + ".tmp")
         try:
             tmp.write_bytes(data)
-            os.replace(tmp, self._path)
+            replace_atomically(tmp, self._path)
         except OSError as exc:
             tmp.unlink(missing_ok=True)
             raise SourceError(f"写入失败：{self._path}（{exc}）") from exc

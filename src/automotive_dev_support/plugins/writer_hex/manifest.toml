@@ -1,0 +1,26 @@
+# 插件清单 —— 注册表只读这个文件，不读代码。
+
+[plugin]
+id = "writer-hex"
+name = "Intel HEX 写回"
+version = "0.1.0"
+api_version = "1"
+
+capabilities = ["writer"]
+
+entry = "automotive_dev_support.plugins.writer_hex.writer:HexWriter"
+
+description = """
+把内存镜像序列化回 Intel HEX 文本（写回）。
+
+无损是硬要求：未改动的字节逐字节相同、未改动的行逐字符相同 ——
+做不到的话 git diff 会显示整文件改动，改了哪个量就看不出来了。
+
+行怎么切由 core 按原文件的记录边界决定，本插件只负责编码文本行；
+仅当段没有边界信息时才按格式上限（0xFF 字节）切。
+地址超过 64K 时自动插入扩展线性地址记录（04）。
+"""
+
+handles = ["hex"]
+
+requires = []

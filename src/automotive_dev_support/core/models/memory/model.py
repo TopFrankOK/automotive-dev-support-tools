@@ -28,6 +28,7 @@ from __future__ import annotations
 import base64
 import struct
 import zlib
+from collections.abc import Iterator
 from datetime import datetime
 from enum import StrEnum
 
@@ -42,6 +43,7 @@ __all__ = [
     "Symbol",
     "ChecksumKind",
     "ChecksumSpec",
+    "ChecksumError",
     "AddressSpace",
 ]
 
@@ -143,6 +145,14 @@ class ChecksumKind(StrEnum):
     CRC32 = "crc32"
 
 
+class ChecksumError(ValueError):
+    """校验和算不了。
+
+    **必须抛出来，不许静默。** 静默跳过或填 0 的后果是：文件照常写出、
+    流程看着每一步都成功，直到台架上被 ECU 拒绝 —— 那时已经无从查起。
+    """
+
+
 class ChecksumSpec(BaseModel):
     """校验和规则。
 
@@ -240,6 +250,42 @@ class AddressSpace(BaseModel):
             address = seg.end
         return False
 
+    # -- 块 ----------------------------------------------------------------
+
+    def iter_blocks(
+        self, max_bytes: int | None = None
+    ) -> Iterator[tuple[int, bytes]]:
+        """按段内的记录边界产出 `(地址, 字节)` 块。
+
+        **有边界就沿用原文件的布局** —— 这是写回能保住「未改动的行一字不变」的关键。
+        没有边界时（段是程序构造出来的）按 `max_bytes` 切，`None` 则整段一块。
+
+        按格式上限再切（如 HEX 每行 ≤0xFF）是 writer 插件的事：那是格式知识。
+        core 只负责「哪段地址算一块」。
+
+        不变量：块首尾相接、拼接起来恰好等于原段字节；空洞不产出块 ——
+        不发明不存在的字节。
+        """
+        for seg in self._sorted():
+            size = len(seg.data)
+            if size == 0:
+                continue
+            if seg.boundaries:
+                edges = [m for m in seg.boundaries if 0 <= m < size]
+                if not edges or edges[0] != 0:
+                    edges.insert(0, 0)  # 前缀不能静默丢掉
+                edges.append(size)
+                spans = list(zip(edges, edges[1:]))
+            elif max_bytes and max_bytes > 0:
+                spans = [
+                    (i, min(i + max_bytes, size)) for i in range(0, size, max_bytes)
+                ]
+            else:
+                spans = [(0, size)]
+            for lo, hi in spans:
+                if hi > lo:
+                    yield seg.start + lo, seg.data[lo:hi]
+
     # -- 写 ----------------------------------------------------------------
 
     def write(self, address: int, data: bytes) -> None:
@@ -281,23 +327,47 @@ class AddressSpace(BaseModel):
 
         返回 `{名称: 计算值}`。**任何「修改后保存」的流程都必须调用它**，
         否则写出的文件会被刷写工具或 ECU 拒绝。
+
+        **算不了就抛 `ChecksumError`，绝不静默跳过。** 四种算不了的情形：
+        区间有空洞（算出来是假的）、没有存放地址（算了也无处可写）、
+        存放地址不在镜像内、算法是厂商私有的（算错比不算糟糕得多）。
+        任一种静默过去，结果都是「文件写出去了但刷不进去」。
         """
         results: dict[str, int] = {}
         for spec in self.checksums:
             if spec.kind is ChecksumKind.NONE:
                 continue
-            blob = self.read(spec.start, spec.end - spec.start)
-            value = _compute_checksum(blob, spec)
+            if spec.algorithm_ref:
+                raise ChecksumError(
+                    f"规则 {spec.name!r} 指向厂商私有算法 {spec.algorithm_ref!r}，"
+                    "无法计算（需要一个算法插件）"
+                )
+            size = spec.end - spec.start
+            if size <= 0:
+                raise ChecksumError(
+                    f"规则 {spec.name!r} 的区间为空或倒置"
+                    f"（0x{spec.start:X}..0x{spec.end:X}）"
+                )
+            if not self.covers(spec.start, size):
+                raise ChecksumError(
+                    f"规则 {spec.name!r} 的被校验区间 0x{spec.start:X}..0x{spec.end:X}"
+                    " 不在镜像内"
+                )
+            if spec.store_address is None:
+                raise ChecksumError(
+                    f"规则 {spec.name!r} 没有存放地址（算出来了也无处可写）"
+                )
+            width = _STORE_WIDTH.get(spec.kind) or max(1, spec.data_width)
+            if not self.covers(spec.store_address, width):
+                raise ChecksumError(
+                    f"规则 {spec.name!r} 的存放地址 0x{spec.store_address:X}"
+                    f"（{width} 字节）不在镜像内"
+                )
+
+            value = _compute_checksum(self.read(spec.start, size), spec)
             results[spec.name] = value
-            if spec.store_address is not None:
-                width = max(1, spec.data_width if spec.kind is not ChecksumKind.SUM32 else 4)
-                payload = value.to_bytes(width, "big", signed=False)[-width:]
-                try:
-                    self.write(spec.store_address, payload)
-                except ValueError:
-                    # 校验和存放地址不在镜像内 —— 记录但不中断，
-                    # 由上层决定是警告还是失败。
-                    pass
+            mask = (1 << (8 * width)) - 1
+            self.write(spec.store_address, (value & mask).to_bytes(width, "big"))
         return results
 
     # -- 自检 --------------------------------------------------------------
@@ -345,5 +415,19 @@ def _compute_checksum(blob: bytes, spec: ChecksumSpec) -> int:
             return value & 0xFF ^ spec.xor_out
         case ChecksumKind.CRC32:
             return (zlib.crc32(blob, spec.init_value) & 0xFFFFFFFF) ^ spec.xor_out
-        case _:
+        case ChecksumKind.NONE:
             return 0
+        case _:
+            raise ChecksumError(f"未知的校验和算法：{spec.kind!r}")
+
+
+#: 每种算法在内存里占几个字节。存储宽度由算法决定，
+#: 不能用 `data_width`（那是参与计算的数据宽度）——
+#: 否则 CRC32 的值塞进 1 字节会溢出。
+_STORE_WIDTH: dict[ChecksumKind, int] = {
+    ChecksumKind.SUM8: 1,
+    ChecksumKind.XOR8: 1,
+    ChecksumKind.SUM16: 2,
+    ChecksumKind.SUM32: 4,
+    ChecksumKind.CRC32: 4,
+}

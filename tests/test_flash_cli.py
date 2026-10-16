@@ -71,17 +71,20 @@ class TestFlashHistory:
         assert "没有记录" in result.stdout
 
     def test_history_lists_past_runs(self, state_dir, image):
-        runner.invoke(app, ["flash", "run", str(image), "--target", "ECM-A"])
-        runner.invoke(app, ["flash", "run", str(image), "--target", "ECM-B"])
+        for target in ("ECM-A", "ECM-B"):
+            run = runner.invoke(app, ["flash", "run", str(image), "--target", target])
+            assert run.exit_code == 0, run.output
         result = runner.invoke(app, ["flash", "history"])
         assert result.exit_code == 0
-        assert "共 2 条记录" in result.stdout
+        assert "共 2 条记录" in result.stdout, result.stdout
         assert "ECM-A" in result.stdout
         assert "ECM-B" in result.stdout
 
     def test_history_can_be_filtered_by_target(self, state_dir, image):
-        runner.invoke(app, ["flash", "run", str(image), "--target", "ECM-A"])
-        runner.invoke(app, ["flash", "run", str(image), "--target", "ECM-B"])
+        for target in ("ECM-A", "ECM-B"):
+            run = runner.invoke(app, ["flash", "run", str(image), "--target", target])
+            # 前置必须成功，否则失败信息会是「没有记录」，看不出真正原因
+            assert run.exit_code == 0, run.output
         result = runner.invoke(app, ["flash", "history", "--target", "ECM-A"])
-        assert "共 1 条记录" in result.stdout
+        assert "共 1 条记录" in result.stdout, result.stdout
         assert "ECM-B" not in result.stdout

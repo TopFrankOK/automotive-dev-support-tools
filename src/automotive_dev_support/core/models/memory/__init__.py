@@ -3,6 +3,7 @@
 from automotive_dev_support.core.models.memory.assembly import ImageAssembler
 from automotive_dev_support.core.models.memory.model import (
     AddressSpace,
+    ChecksumError,
     ChecksumKind,
     ChecksumSpec,
     Segment,
@@ -20,4 +21,5 @@ __all__ = [
     "SymbolKind",
     "ChecksumSpec",
     "ChecksumKind",
+    "ChecksumError",
 ]

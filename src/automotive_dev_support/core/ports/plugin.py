@@ -21,7 +21,7 @@ import tomllib
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -29,6 +29,9 @@ from automotive_dev_support.core.skeleton.artifact import Artifact, ArtifactKind
 from automotive_dev_support.core.skeleton.capability import PluginCapability
 from automotive_dev_support.core.skeleton.datasource import DataSource
 from automotive_dev_support.core.skeleton.job import JobContext
+
+if TYPE_CHECKING:  # 只在类型检查时引用，避免 ports 对具体模型产生运行时依赖
+    from automotive_dev_support.core.models.memory import AddressSpace
 
 __all__ = [
     "API_VERSION",
@@ -42,6 +45,7 @@ __all__ = [
     "View",
     "Gateway",
     "Recipe",
+    "Writer",
 ]
 
 #: 扩展点契约版本。破坏性变更时才 +1。
@@ -265,4 +269,44 @@ class Recipe(Protocol):
 
         失败必须被翻译成**人能读的原因**，不能只回一句「失败了」；
         认不出来的响应要保留原始字节，绝不能当成成功。
+        """
+
+
+@runtime_checkable
+class Writer(Protocol):
+    """内存镜像 → 文件字节（写回）。
+
+    ## 为什么它必须和 Exporter 分开
+
+    Exporter 产出的是**给人看的报告**；Writer 产出的是**要刷进 ECU 的文件**。
+    失败后果完全不同：报告错了重导一遍就行，文件错了是数据事故。
+    合成一个扩展点，迟早有人用错。
+
+    ## 无损是硬要求，不是加分项
+
+    `serialize` 的产物必须能原样回到镜像：
+    **未改动的字节逐字节相同，未改动的行逐字符相同。**
+    做不到的话 `git diff` 会显示整文件改动，
+    改了哪个量、改了多少就看不出来了 —— 标定文件是要进版本库、要过评审的。
+
+    ## 分工
+
+    块怎么切由 core 的 `AddressSpace.iter_blocks()` 决定（格式无关），
+    插件只负责把块编码成自己那种格式的一行文本。
+    **不许反过来**：core 一旦开始认识某种文件的行格式，
+    加一种新格式就又变成改主程序了。
+    """
+
+    writer_id: str
+    kinds: frozenset[ArtifactKind]
+
+    def serialize(self, image: AddressSpace, ctx: dict[str, Any]) -> bytes:
+        """产出**完整文件的字节**（含结束记录）。
+
+        `ctx` 携带格式相关的选项（行宽、地址宽度等），用字典传递
+        是为了加字段不破坏已有实现。
+
+        插件**不做 IO**：调用方拿返回的字节交给
+        `DataSource.write_all()` 原子落盘。这样写回在任何数据源上都能工作，
+        而且「写到一半崩了不留半截」由数据源统一保证。
         """

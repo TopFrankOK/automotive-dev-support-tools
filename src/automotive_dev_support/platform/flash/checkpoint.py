@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 
 from automotive_dev_support.core.models.flash import FlashCheckpoint
+from automotive_dev_support.platform.atomic import replace_atomically
 
 __all__ = ["CheckpointStore"]
 
@@ -47,7 +48,7 @@ class CheckpointStore:
         self._path.parent.mkdir(parents=True, exist_ok=True)
         tmp = self._path.with_name(self._path.name + ".tmp")
         tmp.write_text(checkpoint.model_dump_json(), encoding="utf-8")
-        os.replace(tmp, self._path)
+        replace_atomically(tmp, self._path)
 
     def clear(self) -> None:
         """清除检查点。

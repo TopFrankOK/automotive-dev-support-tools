@@ -49,6 +49,8 @@ __all__ = [
     "ValueBinding",
     "bind_values",
     "bind_image",
+    "WritebackResult",
+    "apply_values",
 ]
 
 #: 不量化的数据类型。其余（各种整数）在物理值反算原始值时取整。
@@ -434,3 +436,102 @@ def _finalize_image_warnings(binding: ValueBinding) -> None:
             f"{len(binding.missing_in_values)} 个量没有从镜像取到值"
             f"（无地址、元素个数未知或地址区间不在镜像内）：{preview}{more}"
         )
+
+
+# ---------------------------------------------------------------------------
+# 写回：把值写进镜像（bind_image 的反向）
+# ---------------------------------------------------------------------------
+
+
+class WritebackResult(BaseModel):
+    """写回结果。
+
+    **跳过的量必须逐个报出并带原因。** 只报一个总数等于没报 ——
+    使用者不知道该去查哪个量，最后就是拿着一份其实没写全的镜像去刷车。
+    """
+
+    written: list[str] = Field(default_factory=list)
+    """已写入的符号路径。"""
+
+    skipped: dict[str, str] = Field(default_factory=dict)
+    """跳过的符号路径 → 原因。"""
+
+
+def apply_values(
+    model: CalibrationModel,
+    image: AddressSpace,
+    byte_order: str = "big",
+) -> WritebackResult:
+    """把模型上挂着的原始值写进镜像，**只写有值的量**。
+
+    与 `bind_image` 严格反向：读出来是什么，写回去就是什么。
+    写不成的量进 `skipped`，镜像**一个字节都不动**。
+    不做「全量重写」—— 那会把未改动的字节也重新编码一遍，
+    等于重新排版，写回就失去意义了。
+    """
+    result = WritebackResult()
+    prefix = ">" if byte_order == "big" else "<"
+
+    for path, char in sorted(model.characteristics.items()):
+        written, reason = _write_characteristic(char, image, prefix)
+        if written:
+            result.written.append(path)
+        else:
+            result.skipped[path] = reason
+    return result
+
+
+def _write_characteristic(
+    char: Characteristic, image: AddressSpace, prefix: str
+) -> tuple[bool, str]:
+    """写一个量的原始值，返回 `(是否写入, 跳过原因)`。
+
+    与 `_read_characteristic` 严格对称：读之前问 `covers`，
+    写之前同样问 —— 往空洞里写等于发明字节。
+    """
+    if char.address is None:
+        return False, "没有地址"
+    count = char.element_count
+    if count <= 0:
+        return False, "元素个数未知"
+
+    values = char.raw_values or []
+    if not values:
+        return False, "没有值"
+    if len(values) != count:
+        return False, f"值有 {len(values)} 个，但需要 {count} 个"
+
+    width = char.data_type.byte_size
+    size = count * width
+    if not image.covers(char.address, size):
+        return (
+            False,
+            f"地址区间 0x{char.address:X}..0x{char.address + size:X} 不在镜像内",
+        )
+
+    if char.data_type is DataType.ASCII:
+        blob = bytes(int(round(v)) & 0xFF for v in values)
+    else:
+        fmt = _STRUCT_FMT.get(char.data_type)
+        if fmt is None:
+            return False, f"不支持的数据类型：{char.data_type}"
+        if char.data_type in _FLOAT_TYPES:
+            packed: list[Any] = list(values)
+        else:
+            packed = []
+            for value in values:
+                whole = round(value)
+                if abs(value - whole) > 1e-9:
+                    return (
+                        False,
+                        f"值 {value} 不是整数，无法按 {char.data_type} 编码"
+                        "（截断会让值悄悄变掉）",
+                    )
+                packed.append(int(whole))
+        try:
+            blob = struct.pack(f"{prefix}{count}{fmt}", *packed)
+        except struct.error as exc:
+            return False, f"编码失败：{exc}"
+
+    image.write(char.address, blob)
+    return True, ""

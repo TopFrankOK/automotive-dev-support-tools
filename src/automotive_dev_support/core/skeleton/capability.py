@@ -40,6 +40,14 @@ class PluginCapability(StrEnum):
     BRIDGE = "bridge"
     """外部工具桥（MATLAB 等）。本软件只做启动、传参与收结果。"""
 
+    WRITER = "writer"
+    """内存镜像 → 文件字节（写回）。
+
+    刻意与 EXPORTER 分开：Exporter 产出**给人看的报告**，
+    Writer 产出**要刷进 ECU 的文件**。失败后果完全不同 ——
+    报告错了重导一遍就行，文件错了是数据事故。
+    """
+
 
 class SourceCapability(StrEnum):
     """数据源自身的能力，决定它适用于哪些操作模式。"""
