@@ -61,7 +61,9 @@ def kind_from_suffix(path: str | Path) -> ArtifactKind:
 class FileSource(DataSource):
     def __init__(self, path: str | Path, writable: bool = True) -> None:
         self._path = Path(path)
-        if not self._path.exists() and writable:
+        # `writable` 说的是「允许写」，那就该允许文件还不存在 ——
+        # 写副本（--out）正是写到新路径上。只读打开才要求文件必须在。
+        if not self._path.exists() and not writable:
             raise SourceError(f"文件不存在：{self._path}")
 
     @property
@@ -82,7 +84,11 @@ class FileSource(DataSource):
             SourceCapability.STREAM,
             SourceCapability.SEEK,
         }
-        if self._path.exists() and os.access(self._path, os.W_OK):
+        if self._path.exists():
+            if os.access(self._path, os.W_OK):
+                caps.add(SourceCapability.WRITE)
+        elif os.access(self._path.parent, os.W_OK):
+            # 文件还不存在，但所在目录可写就能创建（写副本的情形）
             caps.add(SourceCapability.WRITE)
         return frozenset(caps)
 

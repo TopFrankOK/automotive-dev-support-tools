@@ -37,6 +37,11 @@ from automotive_dev_support.services import (
     load_measurement,
     run_compare,
 )
+from automotive_dev_support.services.writeback import (
+    WritebackError,
+    WritebackSources,
+    run_writeback,
+)
 
 app = typer.Typer(
     name="ads",
@@ -488,6 +493,55 @@ def flash_history(
             f"  {record.started_at:%Y-%m-%d %H:%M:%S}  "
             f"{record.target_id:<12} {record.image_fingerprint}  {state}"
         )
+
+
+@app.command()
+def writeback(
+    image: Path = typer.Argument(..., help="被改写的内存镜像（HEX 等）"),
+    a2l: Path = typer.Option(..., "--a2l", help="A2L 描述文件（提供地址与类型）"),
+    values: Path = typer.Option(..., "--values", help="值集文件（要写进去的值，CDFX）"),
+    out: Path | None = typer.Option(
+        None, "--out", "-o", help="写到副本；不给则原地写回（原子替换）"
+    ),
+    byte_order: str = typer.Option(
+        "big", "--byte-order", help="镜像字节序：big（默认，绝大多数 ECU）或 little"
+    ),
+) -> None:
+    """把值集写回内存镜像（只改被改动的字节）。
+
+    未改动的字节逐字节搬运、行尾沿用原文件，
+    所以 diff 里不会出现「整文件都变了」这种没法评审的结果。
+    """
+    for label, path in [("镜像", image), ("A2L", a2l), ("值集", values)]:
+        if not path.exists():
+            typer.echo(f"错误：{label}不存在：{path}", err=True)
+            raise typer.Exit(2)
+
+    try:
+        outcome = run_writeback(
+            _registry(),
+            WritebackSources(
+                image=image, a2l=a2l, values=values, byte_order=byte_order
+            ),
+            out=out,
+            progress=lambda step: typer.echo(f"  {step}"),
+        )
+    except WritebackError as exc:
+        typer.echo(f"错误：{exc}", err=True)
+        raise typer.Exit(1)
+
+    typer.echo(f"\n已写回 {len(outcome.written)} 个量 → {outcome.output}")
+    for path, reason in sorted(outcome.skipped.items()):
+        typer.echo(f"  跳过 {path}：{reason}")
+    if outcome.checksums:
+        for name, value in outcome.checksums.items():
+            typer.echo(f"  校验和 {name} = 0x{value:X}")
+    else:
+        typer.echo(
+            "  提示：没有校验和规则 —— 值改了但校验和没更新，刷进 ECU 可能被拒"
+        )
+    for warning in outcome.warnings:
+        typer.echo(f"警告：{warning}", err=True)
 
 
 def main() -> None:

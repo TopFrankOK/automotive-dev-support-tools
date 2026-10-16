@@ -19,7 +19,7 @@
 
 | 域 | 执行模式 | 硬要求 | 状态 |
 |---|---|---|---|
-| 标定数据 CDM | 离线 · 可重算 · 可回放 | 必须无损往返写回 | ✅ P1 完成（**写回未做**） |
+| 标定数据 CDM | 离线 · 可重算 · 可回放 | 必须无损往返写回 | ✅ P1 完成 + P4 写回（HEX 一条路，S19 待补） |
 | 数据分析 | 大文件 · 流式 · 只读 | 分块索引 + 降采样 | ✅ P2 完成 |
 | 模型工程助手 | 进程外 · 跨语言 · 启动慢 | 契约解耦，只负责启动 | ⬜ P4 |
 | 软件刷写 | 在线 · 有状态 · 不可重放 | 断点续刷 + 审计日志 | ✅ P3 完成（**真实总线待接**） |
@@ -59,7 +59,7 @@ $env:PYTHONPATH = "$PWD\src;C:\Users\赵林\.workbuddy\binaries\python\envs\defa
 & "C:\Users\赵林\.workbuddy\binaries\python\versions\3.13.12\python.exe" -m pytest tests --tb=short -p no:cacheprovider
 ```
 
-预期：`352 passed in ~3.5s`（P3 之前是 250）。
+预期：`450 passed in ~5s`（P4 之后；P3 是 352，P2 是 250）。
 
 **三个必须记住的命令行细节：**
 
@@ -202,15 +202,18 @@ Ed25519 签名**文本许可码**（≈300 字符，微信用一段消息收发�
 
 ## 5. 下一步任务（可直接开工，三选一）
 
-### 选项 A：CDM 写回（建议先做）
+### 选项 A：CDM 写回 —— ✅ 已完成（P4，先做 HEX 一条路）
 
-用户提过的硬要求是「能对 hex/dcm 直接操作修改后保存」，目前只实现了 parse。
-工作内容：
-- 从 `CalibrationModel` + 值 → 重新生成 HEX / S19（Intel HEX 二补数、S-Record 一补数，
-  见坑 #12/#13）
-- 生成物重新 parse 后与输入一致（无损往返，这是验收标准）
-- 顺带补 DCM 解析器（**需要用户提供真实 `.dcm` 样本**，Vector 专有格式细节不公开，
-  不要凭猜测写）
+用户提过的硬要求是「能对 hex/dcm 直接操作修改后保存」，此前只实现了 parse。
+已完成：
+- 值 → 字节（`apply_values`，与 `bind_image` **严格反向**）、校验和重算
+  （`recompute_checksums` 不再空转，算不了就抛错）、`Writer` 扩展点、
+  `writer-hex` 插件、`ads writeback`
+- 验收：一字不改时输出与原文件**字节级相同**；改一个量只有对应字节变
+
+尚未做：
+- S19 写回（S-Record 的 checksum 是**一补数**，不是 HEX 的二补数，见坑 #13）
+- DCM 解析与写回（**需要真实 `.dcm` 样本**，Vector 专有格式细节不公开，不要凭猜测写）
 
 ### 选项 B：真实总线网关（CAN / DoIP）
 
@@ -306,9 +309,9 @@ P3 把刷写逻辑做完了，但**没有真实总线**。工作内容：
 ## 7. git / GitHub
 
 - 仓库：`https://github.com/TopFrankOK/automotive-dev-support-tools`（**public**，MIT）
-- 分支 `main`，tag：`p0` / `p1` / `p2`（每阶段一个，用户要求）
+- 分支 `main`，tag：`p0` / `p1` / `p2` / `p3` / `p4`（每阶段一个，用户要求）
 - 历史：`f758fa4`(P0 骨架+授权) → `dc39da5`(CDFX 值集) → `b7c037b`(P1 CDM 端到端)
-  → `23e2975`(P2 测量数据分析) → P3 软件刷写（配方 + 仿真网关 + 断点续刷 + 审计）
+  → `23e2975`(P2 测量数据分析) → `550e8ba`(P3 软件刷写) → P4 CDM 写回（HEX 一条路）
 - **⚠️ 该项目有并发会话在活动**，动手前先 `git log` 看一眼，避免冲突
 - 提交身份（仅 `--local`）：`TopFrankOK <TopFrankOK@users.noreply.github.com>`
 - **`.gitattributes` 已钉住换行策略，且 `*.hex` 刻意判为文本**——
@@ -335,5 +338,5 @@ P3 把刷写逻辑做完了，但**没有真实总线**。工作内容：
 
 ## 附：一句话状态
 
-> P0 骨架+授权、P1 标定 CDM 端到端、P2 测量数据分析、P3 软件刷写已完成（11 插件可用）；
-> 待办：**CDM 写回**（用户明确要求的硬功能，最该先做）、**真实总线网关**、P4 MATLAB 桥 + Tauri 壳 + FastAPI。
+> P0 骨架+授权、P1 标定 CDM 端到端、P2 测量数据分析、P3 软件刷写、P4 CDM 写回（HEX）已完成（12 插件可用）；
+> 待办：**S19 写回**、**DCM 写回**（需真实样本）、**真实总线网关**、P5 MATLAB 桥 + Tauri 壳 + FastAPI。

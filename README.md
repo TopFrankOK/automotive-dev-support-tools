@@ -15,7 +15,8 @@
 | P1 | 标定 CDM 端到端：A2L / CDFX / HEX / S19 解析、值加载与绑定、比对、Excel 报告、CLI | ✅ 完成 |
 | P2 | 数据分析：MF4 / BLF / ASC 索引、对齐与降采样、趋势命令 | ✅ 完成 |
 | P3 | 软件刷写：配方扩展点、仿真网关、断点续刷、审计留痕、CLI | ✅ 完成 |
-| P4 | MATLAB 桥 + Tauri 桌面壳 + FastAPI 服务层 | ⬜ 未开始 |
+| P4 | CDM 无损写回：值→字节、校验和真算、Writer 扩展点、HEX 写回、`ads writeback` | ✅ 完成（S19 待补） |
+| P5 | MATLAB 桥 + Tauri 桌面壳 + FastAPI 服务层 | ⬜ 未开始 |
 
 > P3 落地的是**可验证的刷写逻辑**：配方、断点续刷、审计、取消保护都在
 > 「字节边界」上跑通（仿真网关驱动，无硬件依赖）。
@@ -141,6 +142,20 @@ ads flash resume app.hex --target ECM-01
 # 历史刷写记录（成功与失败都留痕），可按目标或镜像指纹过滤
 ads flash history --target ECM-01
 ```
+
+### 命令行：CDM 写回
+
+```bash
+# 把值集写回内存镜像（原地写回，原子替换）
+ads writeback app.hex --a2l app.a2l --values new.cdfx
+
+# 写到副本，原文件一个字节都不动
+ads writeback app.hex --a2l app.a2l --values new.cdfx --out patched.hex
+```
+
+**只改被改动的字节**：未改动的字节逐字节搬运、行尾沿用原文件，
+所以 diff 里不会出现「整文件都变了」这种没法评审的结果。
+没有配校验和规则时会明确提示 —— 改了值不更新校验和，刷进 ECU 会被拒。
 
 退出码：成功 `0` / 刷写失败 `1` / 状态不对（镜像不存在、没得续、拒绝续刷）`2`。
 
