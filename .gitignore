@@ -31,6 +31,9 @@ src-tauri/target/
 *.log
 .AutomotiveDevSupport/
 
+# 本地临时文件（测试 basetemp、服务日志、冒烟产物）
+.tmp-*
+
 # --- 环境变量 / 本地密钥 --------------------------------------------------
 .env
 .env.local

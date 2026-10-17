@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>汽车嵌入式研发助手</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>汽车嵌入式研发助手</h1>
+    <span class="sub">标定 · 测量 · 写回 · 刷写</span>
+  </div>
+  <span id="status" class="pill pill-warn">连接中…</span>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab active" data-tab="plugins">插件</button>
+  <button class="tab" data-tab="compare">标定比对</button>
+  <button class="tab" data-tab="trend">测量数据</button>
+  <button class="tab" data-tab="writeback">写回</button>
+  <button class="tab" data-tab="flash">刷写</button>
+</nav>
+
+<main>
+  <section class="panel active" id="panel-plugins">
+    <p class="hint">插件是功能的唯一来源 —— 这里列出了什么，界面就能做什么。</p>
+    <table class="grid">
+      <thead>
+        <tr><th>ID</th><th>名称</th><th>能力</th><th>处理格式</th><th>状态</th></tr>
+      </thead>
+      <tbody id="plugin-rows"></tbody>
+    </table>
+    <div id="plugin-empty" class="placeholder" hidden>没有加载到任何插件。</div>
+  </section>
+
+  <section class="panel" id="panel-compare">
+    <p class="hint">比对两个版本的标定数据（A2L 必填，值集或内存镜像二选一）。路径相对项目根目录。</p>
+    <div class="form">
+      <fieldset>
+        <legend>基准版</legend>
+        <label>A2L<input id="cmp-base-a2l" value="tests/data/sample_v1.a2l"></label>
+        <label>值集<input id="cmp-base-values" value="tests/data/sample_v1.cdfx"></label>
+        <label>镜像<input id="cmp-base-image" placeholder="tests/data/sample_v1.hex"></label>
+      </fieldset>
+      <fieldset>
+        <legend>对比版</legend>
+        <label>A2L<input id="cmp-cand-a2l" value="tests/data/sample_v2.a2l"></label>
+        <label>值集<input id="cmp-cand-values" value="tests/data/sample_v2.cdfx"></label>
+        <label>镜像<input id="cmp-cand-image" placeholder="tests/data/sample_v2.hex"></label>
+      </fieldset>
+      <div class="row">
+        <label>字节序
+          <select id="cmp-order">
+            <option value="big">big</option>
+            <option value="little">little</option>
+          </select>
+        </label>
+        <label>容差<input id="cmp-tol" type="number" step="0.0001" value="0"></label>
+        <label>报告输出<input id="cmp-out" placeholder="report.xlsx（可留空）"></label>
+      </div>
+      <button id="cmp-run" class="primary">开始比对</button>
+    </div>
+    <div id="cmp-summary" class="cards"></div>
+    <div id="cmp-warnings" class="notes"></div>
+    <table class="grid">
+      <thead><tr><th>符号路径</th><th>类型</th><th>改动</th><th>值变化（前 8 个）</th></tr></thead>
+      <tbody id="cmp-rows"></tbody>
+    </table>
+    <div id="cmp-report" class="notes"></div>
+  </section>
+
+  <section class="panel" id="panel-trend">
+    <p class="hint">从测量文件里抽一条信号看趋势（min/max 抽稀 —— 尖峰不会因抽样丢失）。</p>
+    <div class="form">
+      <div class="row">
+        <label>测量文件<input id="tr-file" value="tests/data/sample_v1.mf4"></label>
+        <button id="tr-load">加载信号</button>
+      </div>
+      <div class="row">
+        <label>信号<select id="tr-signal"></select></label>
+        <label>抽稀点数<input id="tr-points" type="number" value="2000" min="10"></label>
+        <label>从（s）<input id="tr-from" type="number" step="0.01" placeholder="留空=全部"></label>
+        <label>到（s）<input id="tr-to" type="number" step="0.01" placeholder="留空=全部"></label>
+      </div>
+      <button id="tr-run" class="primary">画趋势</button>
+    </div>
+    <div id="tr-summary" class="cards"></div>
+    <div id="tr-note" class="notes"></div>
+    <svg id="tr-chart" viewBox="0 0 900 320" preserveAspectRatio="none"></svg>
+    <div id="tr-error" class="notes"></div>
+  </section>
+
+  <section class="panel" id="panel-writeback">
+    <p class="hint">把值集写回内存镜像 —— 只改被改动的字节，未改动的行一字不变。</p>
+    <div class="form">
+      <div class="row">
+        <label>内存镜像<input id="wb-image" value="tests/data/sample_v1.hex"></label>
+        <label>A2L<input id="wb-a2l" value="tests/data/sample_v1.a2l"></label>
+        <label>值集<input id="wb-values" value="tests/data/sample_v2.cdfx"></label>
+        <label>输出（留空=原地）<input id="wb-out" placeholder="patched.hex"></label>
+      </div>
+      <button id="wb-run" class="primary">开始写回</button>
+    </div>
+    <div id="wb-summary" class="cards"></div>
+    <div id="wb-detail" class="notes"></div>
+  </section>
+
+  <section class="panel" id="panel-flash">
+    <p class="hint">软件刷写：仿真网关驱动，逐步显示进度；成功与失败都留审计。</p>
+    <div class="form">
+      <div class="row">
+        <label>镜像<input id="fl-image" value="tests/data/sample_v1.hex"></label>
+        <label>目标<input id="fl-target" value="ECM-01"></label>
+        <label>目标名称<input id="fl-name" value="发动机控制器"></label>
+        <label>操作者<input id="fl-operator" value="web"></label>
+      </div>
+      <div class="row">
+        <label>分块大小<input id="fl-block" type="number" value="32"></label>
+        <label>配方<input id="fl-recipe" value="flash-recipe-sim"></label>
+        <label>网关<input id="fl-gateway" value="gateway-sim"></label>
+      </div>
+      <div class="row">
+        <button id="fl-run" class="primary">开始刷写</button>
+        <button id="fl-history">刷新历史</button>
+      </div>
+    </div>
+    <div id="fl-steps" class="steps"></div>
+    <div id="fl-result" class="notes"></div>
+    <table class="grid">
+      <thead>
+        <tr><th>时间</th><th>目标</th><th>操作者</th><th>段</th><th>字节</th><th>结果</th></tr>
+      </thead>
+      <tbody id="fl-rows"></tbody>
+    </table>
+  </section>
+</main>
+
+<footer class="foot">
+  <span>与 CLI 共用同一套 services</span>
+</footer>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

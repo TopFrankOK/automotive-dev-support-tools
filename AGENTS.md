@@ -26,7 +26,7 @@ $env:PYTHONUTF8 = "1"
 $env:PYTHONPATH = "$PWD\src;C:\Users\赵林\.workbuddy\binaries\python\envs\default\Lib\site-packages"
 $py = "C:\Users\赵林\.workbuddy\binaries\python\versions\3.13.12\python.exe"
 
-& $py -m pytest tests --tb=short -p no:cacheprovider        # 预期 473 passed
+& $py -m pytest tests --tb=short -p no:cacheprovider        # 预期 483 passed
 & $py -m automotive_dev_support.apps.cli.main plugins       # 预期 9 个插件可用
 & $py -c "import sys; sys.argv=['lint-imports']; from importlinter.cli import lint_imports; lint_imports()"
 ```
@@ -36,7 +36,7 @@ $py = "C:\Users\赵林\.workbuddy\binaries\python\versions\3.13.12\python.exe"
 - **不要用 venv 里的 `python.exe`**，它是坏的（`sys.prefix` 解析错，表现为 `No module named pytest`）。
 - **不要用 Git Bash 跑 Python**，它会把 `PYTHONPATH` 的两个条目绞成一个字符串。
 - **`PYTHONUTF8=1` 必须设**，否则 `lint-imports` 在中文 Windows 上直接崩（`gbk codec`）。
-- **`openpyxl` 没装时测试静默缩到 `222 passed, 2 skipped`**（`test_cli.py` 与 `test_export.py` 整文件 `importorskip`）。跑完请核对末尾那一行是不是真的 473。
+- **`openpyxl` 没装时测试静默缩到 `222 passed, 2 skipped`**（`test_cli.py` 与 `test_export.py` 整文件 `importorskip`）。跑完请核对末尾那一行是不是真的 483。
 
 ## Agent skills
 
