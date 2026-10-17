@@ -140,7 +140,14 @@ def run_writeback(
     say("序列化")
     writer = _writer_for(registry, kind_from_suffix(sources.image))
     blob = writer.serialize(
-        image, {"line_ending": _line_ending_of(raw)}
+        image,
+        {
+            "line_ending": _line_ending_of(raw),
+            # 原文件字节交给插件：S-Record 的 S0 头文本与终止记录类型
+            # 不在内存镜像模型里，只能从原文件还原。服务层只是传递字节，
+            # 不认识任何格式 —— 格式知识仍然留在插件内。
+            "source_bytes": raw,
+        },
     )
 
     # 7. 落盘 —— 最后一步，且是原子的

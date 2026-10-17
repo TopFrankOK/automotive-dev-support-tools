@@ -1,0 +1,29 @@
+# 插件清单 —— 注册表只读这个文件，不读代码。
+
+[plugin]
+id = "writer-s19"
+name = "Motorola S-Record 写回"
+version = "0.1.0"
+api_version = "1"
+
+capabilities = ["writer"]
+
+entry = "automotive_dev_support.plugins.writer_s19.writer:S19Writer"
+
+description = """
+把内存镜像序列化回 Motorola S-Record 文本（写回）。
+
+无损是硬要求：未改动的字节逐字节相同、未改动的行逐字符相同 ——
+做不到的话 git diff 会显示整文件改动，改了哪个量就看不出来了。
+
+checksum 是一补数（0xFF - (sum & 0xFF)），与 Intel HEX 的二补数不同。
+行怎么切由 core 按原文件的记录边界决定，本插件只负责编码文本行；
+地址宽度按地址大小自动选（S1/S2/S3）。
+
+S0 头文本与终止记录类型（S7/S8/S9）不在内存镜像模型里，
+故从原文件字节中还原（ctx["source_bytes"]）—— 不认识原文件就不编。
+"""
+
+handles = ["s19"]
+
+requires = []

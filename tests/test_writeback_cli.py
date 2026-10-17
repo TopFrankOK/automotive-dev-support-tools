@@ -59,15 +59,29 @@ class TestWritebackCommand:
         assert result.exit_code == 2
         assert "不存在" in result.output
 
-    def test_format_without_a_writer_exits_with_1(self, tmp_path):
-        """S19 还没有 writer（本期只做 HEX 一条路）—— 必须报失败，不能静默。"""
+    def test_s19_writeback_is_lossless(self, tmp_path):
+        """S19 现在也有 writer：一字不改时输出与原文件**字节级相同**。
+
+        S-Record 的 checksum 是一补数，S0 头与终止记录又不在镜像模型里 ——
+        这两条最容易在写回时丢掉，丢了 diff 立刻变红。
+        """
         image = _copy(tmp_path, "sample_v1.s19")
+        out = tmp_path / "written.s19"
         result = runner.invoke(
             app,
-            ["writeback", str(image), "--a2l", A2L, "--values", VALUES],
+            [
+                "writeback",
+                str(image),
+                "--a2l",
+                A2L,
+                "--values",
+                str(SAMPLE_DATA / "sample_v1.cdfx"),
+                "--out",
+                str(out),
+            ],
         )
-        assert result.exit_code == 1
-        assert "writer" in result.output.lower() or "写出" in result.output
+        assert result.exit_code == 0, result.output
+        assert out.read_bytes() == (SAMPLE_DATA / "sample_v1.s19").read_bytes()
 
     def test_skipped_quantities_are_listed(self, tmp_path):
         """值集与描述对不上的量要逐个报出来，不能只报总数。"""

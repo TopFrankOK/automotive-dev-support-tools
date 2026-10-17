@@ -75,6 +75,7 @@ modules =
     automotive_dev_support.plugins.gateway_sim
     automotive_dev_support.plugins.flash_recipe_sim
     automotive_dev_support.plugins.writer_hex
+    automotive_dev_support.plugins.writer_s19
 
 
 ; ---------------------------------------------------------------------------

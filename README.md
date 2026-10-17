@@ -15,7 +15,7 @@
 | P1 | 标定 CDM 端到端：A2L / CDFX / HEX / S19 解析、值加载与绑定、比对、Excel 报告、CLI | ✅ 完成 |
 | P2 | 数据分析：MF4 / BLF / ASC 索引、对齐与降采样、趋势命令 | ✅ 完成 |
 | P3 | 软件刷写：配方扩展点、仿真网关、断点续刷、审计留痕、CLI | ✅ 完成 |
-| P4 | CDM 无损写回：值→字节、校验和真算、Writer 扩展点、HEX 写回、`ads writeback` | ✅ 完成（S19 待补） |
+| P4 | CDM 无损写回：值→字节、校验和真算、Writer 扩展点、HEX / S19 写回、`ads writeback` | ✅ 完成 |
 | P5 | MATLAB 桥 + Tauri 桌面壳 + FastAPI 服务层 | ⬜ 未开始 |
 
 > P3 落地的是**可验证的刷写逻辑**：配方、断点续刷、审计、取消保护都在

@@ -17,6 +17,7 @@ import pytest
 from conftest import PLUGINS_DIR, SAMPLE_DATA
 from automotive_dev_support.core.models.memory import ChecksumKind, ChecksumSpec
 from automotive_dev_support.core.ports import PluginRegistry
+from automotive_dev_support.core.skeleton.capability import PluginCapability
 from automotive_dev_support.services.compare import CalibrationSources, load_calibration
 from automotive_dev_support.services.writeback import (
     WritebackError,
@@ -70,6 +71,17 @@ class TestEndToEnd:
 
         run_writeback(registry, _sources(image, values="sample_v1.cdfx"))
         assert image.read_bytes() == original
+
+    def test_s19_writeback_is_lossless(self, tmp_path, registry):
+        """S19 一字不改 → 字节级还原。
+
+        S-Record 的 checksum 是一补数，S0 头与终止记录又不在镜像模型里 ——
+        这两样靠服务层把原文件字节交给插件来还原，本条守住这条链路。
+        """
+        image = _image_copy(tmp_path, "sample_v1.s19")
+        out = tmp_path / "written.s19"
+        run_writeback(registry, _sources(image, values="sample_v1.cdfx"), out=out)
+        assert out.read_bytes() == (SAMPLE_DATA / "sample_v1.s19").read_bytes()
 
     def test_progress_reports_each_step(self, tmp_path, registry):
         steps: list[str] = []
@@ -151,5 +163,21 @@ class TestFailures:
 
         with pytest.raises(WritebackError, match="写入"):
             run_writeback(registry, _sources(image), out=blocked)
+
+        assert image.read_bytes() == original
+
+    def test_a_format_without_a_writer_is_reported(self, tmp_path, registry, monkeypatch):
+        """没有任何格式能绕开 writer —— 缺 writer 必须报错，不能静默产出空文件。"""
+        image = _image_copy(tmp_path)
+        original = image.read_bytes()
+        real = registry.by_capability
+        monkeypatch.setattr(
+            registry,
+            "by_capability",
+            lambda cap: [] if cap == PluginCapability.WRITER else real(cap),
+        )
+
+        with pytest.raises(WritebackError, match="writer"):
+            run_writeback(registry, _sources(image))
 
         assert image.read_bytes() == original

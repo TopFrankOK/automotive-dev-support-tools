@@ -25,6 +25,7 @@ from automotive_dev_support.platform.store import FileSource
 from automotive_dev_support.plugins.parser_hex import HexParser
 from automotive_dev_support.services.writeback import WritebackSources, run_writeback
 from automotive_dev_support.plugins.parser_a2l import A2lParser
+from automotive_dev_support.plugins.parser_s19 import S19Parser
 
 CTX = JobContext(job_id="roundtrip")
 
@@ -146,3 +147,53 @@ class TestChangedBytes:
         after, _ = bind_image(_parse_a2l(SAMPLE_DATA / "sample_v1.a2l"), _parse_hex(image))
         for path in outcome.written:
             assert after.get(path).raw_values is not None, f"{path} 写回后读不到值"
+
+
+class TestS19RoundTrip:
+    """S-Record 是第二条路。
+
+    checksum 是一补数（不是 HEX 的二补数），而且 S0 头文本与终止记录
+    都不在内存镜像模型里 —— 写回时最容易丢的就是这几样，
+    丢了「无损」就成了空话。所以这一组单独守着。
+    """
+
+    def test_writing_back_the_same_values_restores_the_file(self, tmp_path):
+        image = _copy(tmp_path, "sample_v1.s19")
+        run_writeback(
+            _registry(),
+            WritebackSources(
+                image=image,
+                a2l=SAMPLE_DATA / "sample_v1.a2l",
+                values=SAMPLE_DATA / "sample_v1.cdfx",
+            ),
+        )
+        assert image.read_bytes() == (SAMPLE_DATA / "sample_v1.s19").read_bytes()
+
+    def test_output_is_accepted_by_the_parser_without_warnings(self, tmp_path):
+        """产物必须是**合法文件**：checksum 对、有结束记录、没有坏行。"""
+        image = _copy(tmp_path, "sample_v1.s19")
+        run_writeback(
+            _registry(),
+            WritebackSources(
+                image=image,
+                a2l=SAMPLE_DATA / "sample_v1.a2l",
+                values=SAMPLE_DATA / "sample_v2.cdfx",
+            ),
+        )
+        outcome = S19Parser().parse(FileSource(image), CTX)
+        assert not outcome.warnings, outcome.warnings
+
+    def test_every_line_satisfies_the_one_complement_rule(self, tmp_path):
+        """逐行验证一补数 —— 抄成 HEX 的二补数会在这里被抓住。"""
+        image = _copy(tmp_path, "sample_v1.s19")
+        run_writeback(
+            _registry(),
+            WritebackSources(
+                image=image,
+                a2l=SAMPLE_DATA / "sample_v1.a2l",
+                values=SAMPLE_DATA / "sample_v2.cdfx",
+            ),
+        )
+        for line in image.read_bytes().decode("ascii").splitlines():
+            body = bytes.fromhex(line[2:])
+            assert (sum(body) & 0xFF) == 0xFF, f"行校验失败：{line}"
